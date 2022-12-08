@@ -165,36 +165,42 @@ nav ul li a:hover::after{
 
 .cgn{
   background: #505050;
-  width: 7%;
+  width: 60px;
   border-radius: 3px;
+  margin-top: 30px;
+  margin-left: 78px;
 }
 
 .bobst{
   background: #505050;
-  width: 10%;
+  width: 90px;
   border-radius: 3px;
+  margin-top: 30px;
+  margin-left: 65px;
 }
 
 .army{
-  width: 2%;
+  width: 15px;
+  margin-top: 30px;
+  margin-left: 17px;
 }
 
 .epfl{
-  width: 5%;
+  width: 50px;
   border-radius: 1px;
   margin-top: 30px;
   margin-left: 45px;
 }
 
 .piccard{
-  width: 4%;
+  width: 30px;
   border-radius: 3px;
   margin-top: 30px;
   margin-left: 45px;
 }
 
 .ec{
-  width: 3%;
+  width: 30px;
   margin-top: 50px;
   margin-left: 45px;
 }
