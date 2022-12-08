@@ -150,12 +150,33 @@ nav ul li a:hover::after{
   font-size: 14px;
 }
 
+.tab-contents ul li a{
+  font-size: 10px;
+  text-decoration: none;
+}
+
 .tab-contents{
   display: none;
 }
 
 .tab-contents.active-tab{
   display: block;
+}
+
+.cgn{
+  background: #505050;
+  width: 7%;
+  border-radius: 3px;
+}
+
+.bobst{
+  background: #505050;
+  width: 10%;
+  border-radius: 3px;
+}
+.epfl{
+  width: 10%;
+  border-radius: 1px;
 }
 
 /*----------Services-----------*/
