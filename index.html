@@ -24,7 +24,7 @@
       <i class="fa-solid fa-bars" onclick="openmenu()"></i>
     </nav>
     <div class="header-text">
-      <p>Computer Science student</p>
+      <p>Computer Science Student</p>
       <h1>Hi, I'm <span>Xavier</span> Ogay<br>from Switzerland</h1>
     </div>
 
@@ -149,6 +149,7 @@
           <a href="https://linkedin.com/in/xavier-ogay"><i class="fa-brands fa-linkedin"></i></a>
           <a href="https://people.epfl.ch/xavier.ogay"><i class="fa-solid fa-user"></i></a>
         </div>
+        <a href="#CV" class="btn btn2" onclick="openCV()" id="cv_btn">Show CV</a>
       </div>
       <div class="contact-right">
         <form name='submit-to-google-sheet'>
@@ -161,9 +162,14 @@
       </div>
     </div>
   </div>
-  <div class="copyright">
-    <p><i class="fa-regular fa-copyright"></i> Copyright - Xavier Ogay - 2022</p>
-  </div>
+  <!------CV------->
+</div>
+
+  <p align="center" id="CV"></p>
+
+
+<div class="copyright">
+  <p><i class="fa-regular fa-copyright"></i> Copyright - Xavier Ogay - 2022</p>
 </div>
 
 <script>
@@ -215,6 +221,22 @@
         }, 10000)
       })
   })
+</script>
+<script>
+  const cv = document.getElementById("CV")
+  const txt = document.getElementById("cv_btn")
+  let show = false
+  function openCV(){
+    if(!show) {
+      cv.innerHTML = "<iframe src='https://drive.google.com/file/d/141NhjnUvxKXBSSKXeVY3-i4_xO7SQoLK/preview#toolbar=0' height='1020' width='50%'/>"
+      show = true
+      txt.innerHTML = "Hide CV"
+    } else {
+      cv.innerHTML =""
+      show = false
+      txt.innerHTML = "Show CV"
+    }
+  }
 </script>
 
 </body>
