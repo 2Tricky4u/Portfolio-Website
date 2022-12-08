@@ -40,7 +40,10 @@
       </div>
       <div class="about-col-2">
         <h1 class="subtitle">About Me</h1>
-        <p>Desciption of me lolilol</p>
+        <p><br>&emsp; 'IC student with a focused ambition to work within the Cybersecurity field.'<br><br>
+          Currently studying for a Computer Science Bachelor at EPFL, I have built a sound knowledge of
+          Software / Hardware fundamentals also as some solid Software Engineering and Low-Level
+          programming interests learnt through studies and multiples projects through my cursus.</p>
         <div class="tab-titles">
           <p class="tab-links active-link" onclick="opentab('skills')">Skills</p>
           <p class="tab-links" onclick="opentab('experience')">Experience</p>
@@ -115,6 +118,38 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <div class="tab-contents courses">
+    <ul>
+      <li>
+        <span>Mathematics:</span>
+        <ul>
+          <li><a href="">Analyse 1</a></li>
+          <li><a href="">Algèbre Linéaire</a></li>
+          <li><a href="">Physique Mécanique</a></li>
+        </ul>
+      </li>
+      <li>
+        <span>Information Technologies:</span>
+        <ul>
+          <li><a href="">Advanced Information, Computation and Communication 1</a></li>
+        </ul>
+      </li>
+      <li>
+        <span>Programming:</span>
+        <ul>
+          <li><a href="">Introduction à la programmation</a></li>
+          <li><a href="">Pratique de la programmation orientée-objet</a></li>
+        </ul>
+      </li>
+      <li>
+        <span>Hardware:</span>
+      </li>
+      <li>
+        <span>Economics/Financial:</span>
+      </li>
+    </ul>
   </div>
 </div>
 
@@ -230,9 +265,9 @@
     for (tabContent of tabContents){
       tabContent.classList.remove("active-tab");
     }
-
     event.currentTarget.classList.add("active-link");
     document.getElementById(name).classList.add("active-tab");
+    //tabContents.namedItem("tab-contents courses").classList.remove("active-tab");
   }
 </script>
 

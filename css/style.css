@@ -188,21 +188,22 @@ nav ul li a:hover::after{
 .epfl{
   width: 50px;
   border-radius: 1px;
-  margin-top: 30px;
   margin-left: 45px;
 }
 
 .piccard{
   width: 30px;
   border-radius: 3px;
-  margin-top: 30px;
   margin-left: 45px;
 }
 
 .ec{
   width: 30px;
-  margin-top: 50px;
   margin-left: 45px;
+}
+
+.courses{
+  display: none;
 }
 
 /*----------Services-----------*/
