@@ -36,7 +36,7 @@
   <div class="container">
     <div class="row">
       <div class="about-col-1">
-        <img src="img/user.png">
+        <img src="img/user.jpg">
       </div>
       <div class="about-col-2">
         <h1 class="subtitle">About Me</h1>
@@ -114,43 +114,92 @@
               <br>&emsp;EC School , Vancouver,
             </li>
           </ul>
-          <a href="#courses" class="btn btn2" onclick="openCourses()" id="courses_btn">Show Courses taken</a>
+          <a href="#courses" class="btn btn2" onclick="showClasses()" id="courses_btn">Show Courses taken</a>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="tab-contents courses">
-    <ul>
-      <li>
-        <span>Mathematics:</span>
-        <ul>
-          <li><a href="">Analyse 1</a></li>
-          <li><a href="">Algèbre Linéaire</a></li>
-          <li><a href="">Physique Mécanique</a></li>
-        </ul>
-      </li>
-      <li>
-        <span>Information Technologies:</span>
-        <ul>
-          <li><a href="">Advanced Information, Computation and Communication 1</a></li>
-        </ul>
-      </li>
-      <li>
-        <span>Programming:</span>
-        <ul>
-          <li><a href="">Introduction à la programmation</a></li>
-          <li><a href="">Pratique de la programmation orientée-objet</a></li>
-        </ul>
-      </li>
-      <li>
-        <span>Hardware:</span>
-      </li>
-      <li>
-        <span>Economics/Financial:</span>
-      </li>
-    </ul>
-  </div>
+  <div class="tab-contents courses" id="courses">
+    <div class="column1">
+      <ul>
+        <li>
+          <span>Mathematics:</span>
+          <ul>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/propedeutique/informatique/coursebook/analyse-i-MATH-101-E">Analyse 1</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/propedeutique/informatique/coursebook/analyse-ii-MATH-106-E">Analyse 2</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/bachelor/informatique/coursebook/analyse-iii-MATH-203-B">Analyse 3</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/bachelor/informatique/coursebook/algebra-MATH-310">Algebra</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/propedeutique/informatique/coursebook/algebre-lineaire-MATH-111-E">Algèbre Linéaire</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/bachelor/informatique/coursebook/probability-and-statistics-MATH-232">Probabilitiy and Statistics</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/propedeutique/informatique/coursebook/physique-generale-mecanique-PHYS-101-C">Physique Mécanique</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/bachelor/informatique/coursebook/general-physics-electromagnetism-PHYS-114">General Physics: Electromagnetism</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div class="column2">
+      <ul>
+        <li>
+          <span>Information Technologies:</span>
+          <ul>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/propedeutique/informatique/coursebook/advanced-information-computation-communication-i-CS-101">Advanced Information, Computation and Communication 1</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/propedeutique/informatique/coursebook/advanced-information-computation-communication-ii-COM-102">Advanced Information, Computation and Communication 2</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/bachelor/informatique/coursebook/algorithms-CS-250">Algorithms</a></li>
+            <li><a href="https://edu.epfl.ch/coursebook/en/computer-networks-COM-208">Computer Networks</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/bachelor/informatique/coursebook/theory-of-computation-CS-251">Theory of Computation</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/bachelor/informatique/coursebook/interaction-personne-systeme-CS-213">Interaction personne-système</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/bachelor/informatique/coursebook/parallelism-and-concurrency-CS-206">Parallelism and Concurrency</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/bachelor/informatique/coursebook/computer-security-COM-301">Computer Security</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div class="column3">
+      <ul>
+        <li>
+          <span>Programming:</span>
+          <ul>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/propedeutique/informatique/coursebook/introduction-a-la-programmation-CS-107">Introduction à la programmation</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/propedeutique/informatique/coursebook/pratique-de-la-programmation-orientee-objet-CS-108">Pratique de la programmation orientée-objet</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/bachelor/informatique/coursebook/functional-programming-CS-210">Functional programming</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/bachelor/informatique/coursebook/introduction-to-machine-learning-ba3-CS-233-A">Introduction to Machine Learning</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/bachelor/informatique/coursebook/projet-programmation-systeme-CS-212">Projet programmation système</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/bachelor/informatique/coursebook/programmation-orientee-systeme-CS-207">Programmation orientée système</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/bachelor/informatique/coursebook/introduction-to-operating-systems-CS-323">Introduction to Operating System</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/bachelor/informatique/coursebook/software-engineering-CS-305">Software Engineering</a></li>
+
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div class="column4">
+      <ul>
+        <li>
+          <span>Hardware:</span>
+          <ul>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/propedeutique/informatique/coursebook/digital-system-design-CS-173">Digital System Design</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/bachelor/informatique/coursebook/computer-architecture-i-CS-208">Computer Architecture 1</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/bachelor/informatique/coursebook/computer-architecture-ii-CS-209">Computer Architecture 2</a></li>
+            <li><a href="https://edu.epfl.ch/studyplan/fr/bachelor/informatique/coursebook/introduction-to-multiprocessor-architecture-CS-307">Introduction to Multiprocessor architecture</a></li>
+            <li><a href="https://moodle.epfl.ch/course/view.php?id=7851">Systèmes embarqués microprogrammés</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div class="column5">
+      <ul>
+        <li>
+          <span>Economics/Financial:</span>
+          <ul>
+            <li><a href="https://edu.epfl.ch/coursebook/fr/histoire-des-relations-internationales-HUM-248-A">Relations Internationales</a></li>
+            <li><a href="https://edu.epfl.ch/coursebook/fr/droit-des-affaires-HUM-234">Droit des affaires</a></li>
+            <li><a href="https://edu.epfl.ch/coursebook/fr/foundations-in-financial-economics-MGT-301">Foundation in Financial Economics</a></li>
+            <li><a href="https://hecnet.unil.ch/hec/syllabus/descriptif/1953">Finance d'entreprise</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
 </div>
 
 <!----------Services---------->
@@ -270,7 +319,14 @@
     //tabContents.namedItem("tab-contents courses").classList.remove("active-tab");
   }
 </script>
+<script>
+  var courses = document.getElementsByClassName("tab-contents courses");
+  function showClasses(){
+    courses.item(0).classList.add("active-tab");
 
+  }
+
+</script>
 <script>
   var sideMenu = document.getElementById("sidemenu");
 
