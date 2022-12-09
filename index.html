@@ -412,8 +412,9 @@
   canvas.height = canvas2.height = ch;
 
   var hac = false;
-  var audio = new Audio('doc/mat.mp3');
+  var audio = new Audio('doc/song.mp3');
   var audio1 = new Audio('doc/ander.mp3');
+  var audio2 = new Audio('doc/bye.mp3');
   var phone = document.getElementsByClassName("phone");
 
   function hack(){
@@ -421,8 +422,11 @@
     if(hac) {
       audio1.play();
       audio.play();
+      audio2.pause();
+      audio2.currentTime=0;
       audio.volume = 0.2;
       audio1.volume = 0.3;
+      audio2.volume = 1;
       hack1();
       phone.item(0).classList.add("hid");
     }
@@ -430,6 +434,7 @@
       audio1.pause();
       audio1.currentTime=0;
       audio.pause();
+      audio2.play();
       ctx.reset();
       ctx2.reset();
       phone.item(0).classList.remove("hid");
