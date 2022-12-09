@@ -88,6 +88,7 @@ nav ul li a:hover::after{
 }
 .tab-contents.active-tab.courses{
   margin: 5%;
+  margin-top: 0%;
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
@@ -101,8 +102,6 @@ nav ul li a:hover::after{
   text-decoration: none;
   color: #ababab;
 }
-
-
 
 .tab-contents.active-tab.courses ul li{
   list-style: none;
