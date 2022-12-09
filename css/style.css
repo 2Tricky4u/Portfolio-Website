@@ -21,20 +21,23 @@ canvas {
   top:0;
   left:0;
   z-index: -9;
+  width: 100%;
 }
 
 .phone{
   z-index: 2;
   position: absolute;
-  width: 10%;
-  right: 0;
+  width: 2%;
+  right: 5%;
+  top: 90%;
   opacity: 100;
 }
 .booth{
   z-index: 1;
   position: absolute;
-  width: 10%;
-  right: 0;
+  width: 2%;
+  right: 5%;
+  top: 90%;
 }
 
 .hid{
