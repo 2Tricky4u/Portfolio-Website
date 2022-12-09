@@ -114,7 +114,7 @@
               <br>&emsp;EC School , Vancouver,
             </li>
           </ul>
-          <a href="#courses" class="btn btn2" onclick="showClasses()" id="courses_btn">Show Courses taken</a>
+          <a class="btn btn2" onclick="showClasses()" id="courses_btn">Show taken Courses</a>
         </div>
       </div>
     </div>
@@ -209,24 +209,30 @@
     <div class="services-list">
 
       <div>
-        <i class="fa-solid fa-code"></i>
-        <h2>Web Design</h2>
-        <p>holalo</p>
-        <a href="#">Learn more</a>
+        <i class="fa-solid fa-pen-nib"></i>
+        <h2>Private lessons</h2>
+        <p>I can give you some tips and help you in certain domain for your study.
+          <br>Contact me to agree on what subject we can work together!
+        </p>
+        <a href="#contact">Contact me</a>
       </div>
 
       <div>
-        <i class="fa-solid fa-crop"></i>
-        <h2>Not Design</h2>
-        <p>holalo</p>
-        <a href="#">Learn more</a>
+        <i class="fa-solid fa-microchip"></i>
+        <h2>Project Development</h2>
+        <p>I'm open to any proposition of software development or Machine learning project.
+          <br>Don't hesitate to contact me to agree on a project development.
+        </p>
+        <a href="#contact">Contact me</a>
       </div>
 
       <div>
-        <i class="fa-brands fa-apper"></i>
-        <h2>WTF Design</h2>
-        <p>holalo</p>
-        <a href="#">Learn more</a>
+        <i class="fa-solid fa-video"></i>
+        <h2>Video Making</h2>
+        <p>During my free time I love to create cinematographic content.
+          <br>You can contact me if you have a video project you would like to build with me!
+        </p>
+        <a href="#contact">Contact me</a>
       </div>
     </div>
   </div>
@@ -321,8 +327,17 @@
 </script>
 <script>
   var courses = document.getElementsByClassName("tab-contents courses");
+  var classes = false;
   function showClasses(){
-    courses.item(0).classList.add("active-tab");
+    if(!classes) {
+      courses.item(0).classList.add("active-tab");
+      document.getElementById("courses_btn").innerHTML = "Hide taken Courses";
+      classes = true;
+    }else {
+      courses.item(0).classList.remove("active-tab");
+      document.getElementById("courses_btn").innerHTML = "Show taken Courses";
+      classes = false;
+    }
 
   }
 
