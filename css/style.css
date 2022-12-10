@@ -568,6 +568,9 @@ nav .fa-solid{
     z-index: -9;
     width: 100%;
   }
+  .hid{
+    opacity: 0;
+  }
 }
 
 #msg{
