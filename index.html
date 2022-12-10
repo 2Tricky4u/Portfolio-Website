@@ -412,7 +412,7 @@
   canvas.height = canvas2.height = ch;
 
   var hac = false;
-  var audio = new Audio('doc/song.mp3');
+  var audio = new Audio('doc/2.mp3');
   var audio1 = new Audio('doc/ander.mp3');
   var audio2 = new Audio('doc/bye.mp3');
   var phone = document.getElementsByClassName("phone");
@@ -438,6 +438,8 @@
       ctx.reset();
       ctx2.reset();
       phone.item(0).classList.remove("hid");
+      audio.remove();
+      audio = new Audio("doc/"+(randomInt(1,4)%4).toString()+".mp3")
     }
   }
 
