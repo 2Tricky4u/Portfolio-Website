@@ -545,6 +545,29 @@ nav .fa-solid{
   .copyright{
     font-size: 12px;
   }
+  .phone{
+    z-index: 2;
+    position: absolute;
+    width: 7%;
+    right: 5%;
+    top: 90%;
+    opacity: 100;
+  }
+  .booth{
+    z-index: 1;
+    position: absolute;
+    width: 7%;
+    right: 5%;
+    top: 90%;
+  }
+  canvas {
+    display: block;
+    position:absolute;
+    top:0;
+    left:0;
+    z-index: -9;
+    width: 100%;
+  }
 }
 
 #msg{
