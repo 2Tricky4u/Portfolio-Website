@@ -501,7 +501,7 @@ nav .fa-solid{
     width: 200px;
     height: 100vh;
     padding-top: 50px;
-    z-index: 2;
+    z-index: 3;
     transition: right 0.3s;
   }
 
