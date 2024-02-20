@@ -202,6 +202,11 @@ nav ul li a:hover::after{
   font-size: 14px;
 }
 
+.tab-contents education_title span{
+  color: #b54769;
+  font-size: 16px;
+}
+
 .tab-contents ul li a{
   font-size: 10px;
   text-decoration: none;
