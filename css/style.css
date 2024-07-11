@@ -626,7 +626,7 @@ nav .fa-solid{
 .code-box {
   margin: 20px auto;
   padding: 20px;
-  background-color: var(--black-mild);
+  background-color: var(--black-mild) !important;
   /*border: 1px solid #ddd;*/
   opacity: 0.8;
   border-radius: 5px;
@@ -635,7 +635,7 @@ nav .fa-solid{
 }
 
 .code-box pre {
-  background-color: inherit;
+  background-color: var(--black-light) !important;
   padding: 10px;
   border-radius: 5px;
   color: #f8f8f2;
