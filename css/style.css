@@ -3,7 +3,7 @@
   --black-mild: #161616;
   --black-light: #1C1C1C;
   --red-lust: #E31C25;
-  --red-dark: #BB000E;
+  --red-dark: #e63e4b;
   --red-original: #ff004f;
   --white-original: #fff;
   --black-original: #080808;
@@ -26,7 +26,7 @@ html{
 }
 
 body{
-  background: var(--black-original); /*var(--black-original)*/
+  background: var(--black-mild); /*var(--black-original)*/
   color: var(--white-original);
 }
 
@@ -59,7 +59,7 @@ canvas {
   opacity: 0;
 }
 
-.faa-ring{color: red}@-webkit-keyframes ring{0%{-webkit-transform: rotate(-15deg);transform: rotate(-15deg)}2%{-webkit-transform: rotate(15deg);transform: rotate(15deg)}4%{-webkit-transform: rotate(-18deg);transform: rotate(-18deg)}6%{-webkit-transform: rotate(18deg);transform: rotate(18deg)}8%{-webkit-transform: rotate(-22deg);transform: rotate(-22deg)}10%{-webkit-transform: rotate(22deg);transform: rotate(22deg)}12%{-webkit-transform: rotate(-18deg);transform: rotate(-18deg)}14%{-webkit-transform: rotate(18deg);transform: rotate(18deg)}16%{-webkit-transform: rotate(-12deg);transform: rotate(-12deg)}18%{-webkit-transform: rotate(12deg);transform: rotate(12deg)}20%{-webkit-transform: rotate(0deg);transform: rotate(0deg)}}@keyframes ring{0%{-webkit-transform: rotate(-15deg);-ms-transform: rotate(-15deg);transform: rotate(-15deg)}2%{-webkit-transform: rotate(15deg);-ms-transform: rotate(15deg);transform: rotate(15deg)}4%{-webkit-transform: rotate(-18deg);-ms-transform: rotate(-18deg);transform: rotate(-18deg)}6%{-webkit-transform: rotate(18deg);-ms-transform: rotate(18deg);transform: rotate(18deg)}8%{-webkit-transform: rotate(-22deg);-ms-transform: rotate(-22deg);transform: rotate(-22deg)}10%{-webkit-transform: rotate(22deg);-ms-transform: rotate(22deg);transform: rotate(22deg)}12%{-webkit-transform: rotate(-18deg);-ms-transform: rotate(-18deg);transform: rotate(-18deg)}14%{-webkit-transform: rotate(18deg);-ms-transform: rotate(18deg);transform: rotate(18deg)}16%{-webkit-transform: rotate(-12deg);-ms-transform: rotate(-12deg);transform: rotate(-12deg)}18%{-webkit-transform: rotate(12deg);-ms-transform: rotate(12deg);transform: rotate(12deg)}20%{-webkit-transform: rotate(0deg);-ms-transform: rotate(0deg);transform: rotate(0deg)}}.faa-ring.animated, .faa-ring.animated-hover:hover, .faa-parent.animated-hover:hover>.faa-ring{-webkit-animation: ring 2s ease infinite;animation: ring 2s ease infinite;transform-origin-x: 50%;transform-origin-y: 0px;transform-origin-z: initial}
+.faa-ring{color: var(--red-lust) /*red*/}@-webkit-keyframes ring{0%{-webkit-transform: rotate(-15deg);transform: rotate(-15deg)}2%{-webkit-transform: rotate(15deg);transform: rotate(15deg)}4%{-webkit-transform: rotate(-18deg);transform: rotate(-18deg)}6%{-webkit-transform: rotate(18deg);transform: rotate(18deg)}8%{-webkit-transform: rotate(-22deg);transform: rotate(-22deg)}10%{-webkit-transform: rotate(22deg);transform: rotate(22deg)}12%{-webkit-transform: rotate(-18deg);transform: rotate(-18deg)}14%{-webkit-transform: rotate(18deg);transform: rotate(18deg)}16%{-webkit-transform: rotate(-12deg);transform: rotate(-12deg)}18%{-webkit-transform: rotate(12deg);transform: rotate(12deg)}20%{-webkit-transform: rotate(0deg);transform: rotate(0deg)}}@keyframes ring{0%{-webkit-transform: rotate(-15deg);-ms-transform: rotate(-15deg);transform: rotate(-15deg)}2%{-webkit-transform: rotate(15deg);-ms-transform: rotate(15deg);transform: rotate(15deg)}4%{-webkit-transform: rotate(-18deg);-ms-transform: rotate(-18deg);transform: rotate(-18deg)}6%{-webkit-transform: rotate(18deg);-ms-transform: rotate(18deg);transform: rotate(18deg)}8%{-webkit-transform: rotate(-22deg);-ms-transform: rotate(-22deg);transform: rotate(-22deg)}10%{-webkit-transform: rotate(22deg);-ms-transform: rotate(22deg);transform: rotate(22deg)}12%{-webkit-transform: rotate(-18deg);-ms-transform: rotate(-18deg);transform: rotate(-18deg)}14%{-webkit-transform: rotate(18deg);-ms-transform: rotate(18deg);transform: rotate(18deg)}16%{-webkit-transform: rotate(-12deg);-ms-transform: rotate(-12deg);transform: rotate(-12deg)}18%{-webkit-transform: rotate(12deg);-ms-transform: rotate(12deg);transform: rotate(12deg)}20%{-webkit-transform: rotate(0deg);-ms-transform: rotate(0deg);transform: rotate(0deg)}}.faa-ring.animated, .faa-ring.animated-hover:hover, .faa-parent.animated-hover:hover>.faa-ring{-webkit-animation: ring 2s ease infinite;animation: ring 2s ease infinite;transform-origin-x: 50%;transform-origin-y: 0px;transform-origin-z: initial}
 
 #header{
   width: 100%;
@@ -101,7 +101,7 @@ nav ul li a::after {
   content: '';
   width: 0;
   height: 3px;
-  background: var(--red-original);
+  background: var(--red-lust);
   position: absolute;
   left: 0;
   bottom: -6px;
@@ -123,7 +123,7 @@ nav ul li a:hover::after{
 }
 
 .header-text h1 span{
-  color: var(--red-original);
+  color: var(--red-lust); /*red-original*/
 }
 
 /*--------About-----------*/
@@ -196,7 +196,7 @@ nav ul li a:hover::after{
   content: '';
   width: 0;
   height: 3px;
-  background: var(--red-original);
+  background: var(--red-lust); /*red-original*/
   position: absolute;
   left: 0;
   bottom: -8px;
@@ -213,12 +213,12 @@ nav ul li a:hover::after{
 }
 
 .tab-contents ul li span{
-  color: var(--purple-original);
+  color: var(--red-dark); /*purple-original*/
   font-size: 14px;
 }
 
 .tab-contents education_title span{
-  color: var(--purple-original);
+  color: var(--red-dark); /*purple-original*/
   font-size: 16px;
 }
 
@@ -321,7 +321,7 @@ nav ul li a:hover::after{
 }
 
 .services-list div:hover{
-  background: var(--red-original);
+  background: var(--red-lust); /*red-original*/
   transform: translateY(-10px);
 }
 
@@ -353,7 +353,8 @@ nav ul li a:hover::after{
 .layer{
   width: 100%;
   height: 0;
-  background: linear-gradient(rgba(0,0,0,0.6), var(--red-original));
+  /*background: linear-gradient(rgba(0,0,0,0.6), var(--red-original));*/
+  background: linear-gradient(rgba(0,0,0,0.6), var(--red-lust));
   border-radius: 10px;
   position: absolute;
   left: 0;
@@ -376,7 +377,7 @@ nav ul li a:hover::after{
 
 .layer a{
   margin-top: 20px;
-  color: var(--red-original);
+  color: var(--red-lust); /*red-original*/
   text-decoration: none;
   font-size: 18px;
   line-height: 60px;
@@ -400,7 +401,7 @@ nav ul li a:hover::after{
   display: block;
   margin: 50px auto;
   width: fit-content;
-  border: 1px solid var(--red-original);
+  border: 1px solid var(--red-lust); /*red-original*/
   padding: 14px 50px;
   border-radius: 6px;
   text-decoration: none;
@@ -409,7 +410,7 @@ nav ul li a:hover::after{
 }
 
 .btn:hover{
-  background: var(--red-original);
+  background: var(--red-lust); /*red-original*/
 }
 
 /*------Contact------> */
@@ -428,7 +429,7 @@ nav ul li a:hover::after{
 }
 
 .contact-left p i{
-  color: var(--red-original);
+  color: var(--red-lust); /*red-original*/
   margin-right: 15px;
   font-size: 25px;
 }
@@ -447,13 +448,13 @@ nav ul li a:hover::after{
 }
 
 .social-icons a:hover {
-  color: var(--red-original);
+  color: var(--red-lust); /*red-original*/
   transform: translateY(-5px);
 }
 
 .btn.btn2{
   display: inline-block;
-  background: var(--red-original);
+  background: var(--red-lust); /*red-original*/
 }
 
 .contact-right form{
@@ -514,7 +515,7 @@ nav .fa-solid{
   }
 
   nav ul {
-    background: var(--red-original);
+    background: var(--red-lust); /*red-original*/
     position: fixed;
     top: 0;
     right: -200px;
