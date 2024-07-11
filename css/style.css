@@ -3,6 +3,7 @@
   --black-mad: #111213;
   --black-mild: #161616;
   --black-light: #1C1C1C;
+  --black-grey: #292929;
   --red-lust: #ec1c24; /*#E31C25;*/
   --red-dark: #e63e4b;
   --red-original: #ff004f;
@@ -627,7 +628,6 @@ nav .fa-solid{
   margin: 20px auto;
   padding: 20px;
   background-color: var(--black-mild) !important;
-  /*border: 1px solid #ddd;*/
   opacity: 0.8;
   border-radius: 5px;
   max-width: 800px;
@@ -635,22 +635,31 @@ nav .fa-solid{
 }
 
 .code-box pre {
-  background-color: var(--black-light) !important;
+  background-color: var(--black-grey) !important;
   padding: 10px;
   border-radius: 5px;
   color: #f8f8f2;
   overflow: auto;
+  text-shadow: none !important;
+  box-shadow: none !important;
 }
 
 .code-box code {
-  background-color: inherit;
-  color: inherit;
+  background-color: inherit !important;
+  color: inherit !important;
   display: block;
   white-space: pre-wrap;
   word-break: break-all;
   padding: 0;
   margin: 0;
   border: none;
+  text-shadow: none !important;
+  box-shadow: none !important;
+}
+
+.token {
+  text-shadow: none !important;
+  box-shadow: none !important;
 }
 
 
