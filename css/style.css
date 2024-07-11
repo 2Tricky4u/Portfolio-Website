@@ -1,8 +1,9 @@
 :root {
   --black-dark: #111111;
+  --black-mad: #111213;
   --black-mild: #161616;
   --black-light: #1C1C1C;
-  --red-lust: #E31C25;
+  --red-lust: #ec1c24; /*#E31C25;*/
   --red-dark: #e63e4b;
   --red-original: #ff004f;
   --white-original: #fff;
