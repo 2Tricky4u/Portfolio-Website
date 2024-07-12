@@ -628,7 +628,7 @@ nav .fa-solid{
   margin: 20px auto;
   padding: 20px;
   background-color: var(--black-mild) !important;
-  opacity: 0.8;
+  opacity: 1;
   border-radius: 5px;
   max-width: 800px;
   overflow: auto;
