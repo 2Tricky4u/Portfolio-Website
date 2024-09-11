@@ -7,9 +7,13 @@
   <title>Understanding Phishing Attacks</title>
   <link rel="stylesheet" type="text/css" href="/css/style.css">
   <link rel="icon" href="/img/X.ico">
+  <!--
   <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.25.0/themes/prism.min.css" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.25.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.25.0/prism.min.js"></script>-->
   <script src="https://kit.fontawesome.com/82f3e7b61a.js" crossorigin="anonymous"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/themes/prism.min.css" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/prism.min.js"></script>
+
 </head>
 <body class="post1-font">
 <div id="header">
@@ -33,12 +37,38 @@
     <br>
     <h2>Chapter 1 - Anatomy of Binary</h2>
     <br>
+    <div class="code-box">
+          <pre><code>
+  gcc -E -P
+            Stop compilation after preprocessing, where-E tells gcc to stop after preprocessing and-P causes the compiler to omit debugging information.
+
+  gcc -S -masm=intel
+            The -S flag tell gcc to stop after compilation stage and store the assembly files to disk(.s is a conventional extension for assembly files). -masm=intel emits assembly in Intel syntax rather than the default AT&T syntax.
+          </code></pre>
+    </div>
     <br>
     <h3>Compilation</h3>
     <br>
     <img src="f1_1.png" alt="Compilation details" style="width: 100%; height: auto;">
     <br>
-
+    <br>
+    <h4>Preprocessing</h4>
+    <br>
+    Preprocessing is the first phase in the compilation process where all the macros and directives are expanded. This is done to make the source code cleaner and ready for compilation. During this phase, any <i>#include</i> directives, which bring in external header files, and <i>#define</i> macros, which define constants or shortcuts, are fully expanded.
+    <br>
+    <br>
+    <h4>Compilation</h4>
+    <br>
+    The next step in compiling a C program is the <b>compilation phase</b>, where the preprocessed C code is translated into assembly language. Compilers translate the code into assembly language, which is close to machine code but still human-readable. Then, a dedicated assembler does the final conversion into machine code for the processor. This modularity makes life easier for compiler developers.
+    The compilation phase isn't just about translation; it’s also where heavy optimization takes place. Tools like GCC allow you to control this with flags like -O0 (no optimization) to -O3 (maximum optimization). Optimizations can affect the final assembly output, making your program faster and more efficient, though at the cost of readability when you inspect the disassembled code.
+    Another neat aspect of the assembly code generated during this phase is that it still preserves <b>symbolic information</b>.
+    However, later on, when you deal with stripped binaries—where symbols are removed—you won’t have this luxury. In such cases, disassembling the code becomes significantly harder!
+    <br>
+    <br>
+    <h4>Assembly</h4>
+    <br>
+    <br>
+    <h4>Linking</h4>
     <br>
     <h3><u>Exercises</u></h3>
 
