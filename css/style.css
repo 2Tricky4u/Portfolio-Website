@@ -649,6 +649,11 @@ nav .fa-solid{
     /*background-image: url("img/phone-background.png");*/
   }
 
+  .cmd-container {
+    display: none;
+    pointer-events: none;
+  }
+
   .home {
     flex-direction: column-reverse;
     justify-content: center;
@@ -929,7 +934,7 @@ nav .fa-solid{
 
 .cmd-container {
   position: absolute;
-  top: 16%;
+  top: 20%;
   left: 9%;
   width: 40%;
   background: #0c0c0c;
@@ -953,8 +958,10 @@ nav .fa-solid{
 
 .hidden {
   opacity: 0;
-  transform: scale(0.9); /* Shrinks when hiding */
-  pointer-events: none; /* Disables interaction when hidden */
+  transform: scale(0.9);
+  pointer-events: none;
+  visibility: hidden;
+  display: none;
 }
 
 /* Title Bar */
