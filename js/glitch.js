@@ -1,14 +1,24 @@
 const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
+document.querySelectorAll(".scramble-effect, .btn, .tab-links").forEach(elem => {
+  const originalText = elem.getAttribute("data-text");
+  if (!originalText) return;
 
-document.querySelectorAll(".scramble-effect").forEach(elem => {
-  const originalText = elem.innerText; // Store original text
 
   elem.onmouseover = event => {
     let iteration = 0;
-    console.log(originalText);
     let interval = setInterval(() => {
-      event.target.innerText = originalText
+      let displayText;
+
+      if (event.target.tagName === "INPUT" || event.target.tagName === "BUTTON") {
+        displayText = event.target.value;
+      } else if (event.target.tagName === "P" || event.target.tagName === "A" || event.target.tagName === "SPAN" || event.target.tagName === "DIV") {
+        displayText = event.target.textContent;
+      } else {
+        displayText = event.target.innerText;
+      }
+
+      displayText = originalText
         .split("")
         .map((letter, index) => {
           if (index < iteration) {
@@ -17,6 +27,12 @@ document.querySelectorAll(".scramble-effect").forEach(elem => {
           return letters[Math.floor(Math.random() * 26)];
         })
         .join("");
+
+      if (event.target.tagName === "INPUT" || event.target.tagName === "BUTTON") {
+        event.target.value = displayText;
+      } else {
+        event.target.textContent = displayText;
+      }
 
       if (iteration >= originalText.length) {
         clearInterval(interval);
