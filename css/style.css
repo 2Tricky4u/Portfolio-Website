@@ -686,7 +686,7 @@ nav .fa-solid{
     width: 200px;
     height: 100vh;
     padding-top: 50px;
-    z-index: 3;
+    z-index: 1000000;
     transition: right 0.3s;
   }
 
@@ -1030,5 +1030,39 @@ nav .fa-solid{
   left: 0;
   color: var(--red-lust);
   z-index: 9999;
+}
+
+/* blob */
+#blob {
+  height: 100px;
+  aspect-ratio: 1;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: white linear-gradient(
+    to right,
+    aquamarine,
+    mediumpurple
+  );
+  animation: rotate 10s infinite;
+  filter: blur(60px);
+  opacity: 0.3;
+  z-index: -1;
+}
+
+@keyframes rotate {
+  from {
+    rotate: 0deg;
+  }
+
+  50% {
+    scale: 1 1.5;
+  }
+  to {
+    rotate: 360deg;
+  }
 }
 

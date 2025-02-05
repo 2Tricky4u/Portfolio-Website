@@ -10,12 +10,11 @@
   <script src="https://kit.fontawesome.com/82f3e7b61a.js" crossorigin="anonymous"></script>
   <script src="js/polyfills.js"></script>
   <script src="js/main.js"></script>
-  <script src="js/index.js"></script>
 </head>
 
 
 <body>
-
+<div id="blob"></div>
 <div class="bars-animation">
   <div class="bar" style="--i:1"></div>
   <div class="bar" style="--i:2"></div>
@@ -56,11 +55,11 @@
     <nav>
       <img src="img/logo.png" class="logo">
       <ul id="sidemenu">
-        <li><a href="#about">About</a></li>
-        <li><a href="#services">Services</a></li>
-        <li><a href="#portfolio">Portfolio</a></li>
-        <li><a href="writeups.html">Blog</a></li>
-        <li><a href="#contact">Contact</a></li>
+        <li><a href="#about" class="scramble-effect" data-text="About">About</a></li>
+        <li><a href="#services" class="scramble-effect" data-text="Services">Services</a></li>
+        <li><a href="#portfolio" class="scramble-effect">Portfolio</a></li>
+        <li><a href="writeups.html" class="scramble-effect">Blog</a></li>
+        <li><a href="#contact" class="scramble-effect">Contact</a></li>
         <i class="fa-solid fa-xmark" onclick="closemenu()"></i>
       </ul>
       <i class="fa-solid fa-bars" onclick="openmenu()"></i>
@@ -645,6 +644,9 @@
 </div>
 
 <script src="js/contact.js"></script>
+<script src="js/blob.js"></script>
+<script src="js/glitch.js"></script>
+<script src="js/index.js"></script>
 
 </body>
 </html>
