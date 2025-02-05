@@ -487,14 +487,14 @@ nav ul li a:hover::after{
 }
 
 .work{
-  border-radius: 10px;
+  border-radius: 2px;
   position: relative;
   overflow: hidden;
 }
 
 .work img{
   width: 100%;
-  border-radius: 10px;
+  border-radius: 2px;
   display: block;
   transition: transform 0.5s;
 }
@@ -828,7 +828,7 @@ nav .fa-solid{
     inset 1px 1px 0px #ffffff,    /* Light top-left */
     inset -2px -2px 0px #404040,  /* Darker inner bottom-right */
     inset 2px 2px 0px #c0c0c0;    /* Lighter inner top-left */
-  background: #f0f0f0;
+  background: var(--black-mild);
 }
 
 .xp-title-bar {
