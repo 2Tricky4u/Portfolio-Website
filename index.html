@@ -10,6 +10,34 @@
   <script src="https://kit.fontawesome.com/82f3e7b61a.js" crossorigin="anonymous"></script>
   <script src="js/polyfills.js"></script>
   <script src="js/main.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const cmdWindow = document.querySelector(".cmd-container");
+      const titleBar = document.querySelector(".cmd-title-bar");
+
+      let isDragging = false;
+      let offsetX, offsetY;
+
+      titleBar.addEventListener("mousedown", function (e) {
+        isDragging = true;
+        offsetX = e.clientX - cmdWindow.offsetLeft;
+        offsetY = e.clientY - cmdWindow.offsetTop;
+        cmdWindow.style.cursor = "grabbing";
+      });
+
+      document.addEventListener("mousemove", function (e) {
+        if (isDragging) {
+          cmdWindow.style.left = e.clientX - offsetX + "px";
+          cmdWindow.style.top = e.clientY - offsetY + "px";
+        }
+      });
+
+      document.addEventListener("mouseup", function () {
+        isDragging = false;
+        cmdWindow.style.cursor = "grab";
+      });
+    });
+  </script>
 </head>
 
 
