@@ -933,6 +933,7 @@ nav .fa-solid{
   color: white;
   overflow: hidden;
   cursor: grab; /* Indicate draggable area */
+  z-index: 150;
 }
 
 /* Title Bar */
