@@ -26,8 +26,8 @@ var configs = (function () {
     usage: "Usage",
     file: "file",
     file_not_found: "File '<value>' not found.",
-    user: "Xavier",
-    host: "ogay.local",
+    user: "b34u71ful_u53r",
+    host: "skynet",
     is_root: false,
     type_delay: 20
   };
@@ -52,9 +52,9 @@ var files = (function () {
   };
   Singleton.defaultOptions = {
     "about.txt": "This website was built by Xavier Ogay.\nFeel free to explore!",
-    "contact.txt": "Email: xaga.ogay@gmail.com",
+    "contact.txt": "Contact at bottom of the page",
     "projects.txt": "Check out my projects in the portfolio section.",
-    "resume.txt": "Résumé available upon request."
+    "resume.txt": "CV available at bottom page."
   };
   return {
     getInstance: function (options) {
@@ -96,12 +96,17 @@ var main = (function () {
     this.prompt.textContent = this.completePrompt;
     this.cmdLine.focus();
 
+    // When clicking inside CMD, focus the input
+    document.querySelector(".cmd-container").addEventListener("click", () => {
+      this.cmdLine.focus();
+      document.body.classList.add("hide-cursor"); // Prevent cursor outside
+    });
+
+    // When clicking outside, blur the input and hide the cursor
     document.addEventListener("click", (event) => {
-      const cmdContainer = document.querySelector(".cmd-container");
-      if (cmdContainer.contains(event.target)) {
-        this.cmdLine.focus();
-      } else {
-        this.cmdLine.blur(); // Remove cursor when clicking outside
+      if (!document.querySelector(".cmd-container").contains(event.target)) {
+        this.cmdLine.blur();
+        document.body.classList.remove("hide-cursor"); // Restore default cursor
       }
     });
 
@@ -115,6 +120,7 @@ var main = (function () {
       }
     });
   };
+
 
   Terminal.prototype.handleCmd = function (command) {
     var cmdComponents = command.split(" ");
