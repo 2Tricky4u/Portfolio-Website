@@ -313,7 +313,8 @@ nav ul li a:hover::after{
 
 .about-col-1 img{
   width: 100%;
-  border-radius: 15px;
+  /*border-radius: 15px;*/
+  border-radius: 2px;
 }
 
 .about-col-2 {
@@ -642,13 +643,23 @@ nav .fa-solid{
   display: none;
 }
 
-@media only screen and (max-width: 600px) {
+@media only screen and (max-width: 768px) {
   #header{
     /*background-image: url("img/phone-background.png");*/
   }
 
+  .home {
+    flex-direction: column-reverse;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .home-img {
+    margin-bottom: 0;
+  }
+
   .header-text{
-    margin-top: 100%;
+    margin-top: 1em;
     font-size: 16px;
   }
 
@@ -807,4 +818,53 @@ nav .fa-solid{
   box-shadow: none !important;
 }
 
+.xp-container {
+  display: inline-block;
+  width: fit-content;
+  border: 2px solid #808080;
+  box-shadow:
+    inset -1px -1px 0px #808080,  /* Dark bottom-right */
+    inset 1px 1px 0px #ffffff,    /* Light top-left */
+    inset -2px -2px 0px #404040,  /* Darker inner bottom-right */
+    inset 2px 2px 0px #c0c0c0;    /* Lighter inner top-left */
+  background: #f0f0f0;
+}
+
+.xp-title-bar {
+  background: linear-gradient(to bottom, var(--red-dark), var(--red-lust));
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  padding: 3px 10px;
+  text-align: left;
+  border-bottom: 2px solid #808080; /* Darker separator */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.xp-close-btn {
+  width: 16px;
+  height: 16px;
+  background: #c0c0c0;
+  color: black;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+  line-height: 14px;
+  border: 1px solid #808080;
+  display: inline-block;
+  margin-right: 5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.xp-close-btn:hover {
+  background: red;
+  color: white;
+}
+
+.xp-border {
+  padding: 5px;
+}
 
