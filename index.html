@@ -8,7 +8,11 @@
   <link rel="stylesheet" type="text/css" href="css/style.css">
   <link rel="icon" href="img/X.ico">
   <script src="https://kit.fontawesome.com/82f3e7b61a.js" crossorigin="anonymous"></script>
+  <script src="js/polyfills.js"></script>
+  <script src="js/main.js"></script>
 </head>
+
+
 <body>
 
 <div class="bars-animation">
@@ -19,6 +23,31 @@
   <div class="bar" style="--i:5"></div>
   <div class="bar" style="--i:6"></div>
 </div>
+
+<div class="cmd-container">
+  <div class="cmd-title-bar">
+    Command Prompt
+    <div class="cmd-buttons">
+      <span class="cmd-btn close"></span>
+      <span class="cmd-btn minimize"></span>
+      <span class="cmd-btn maximize"></span>
+    </div>
+  </div>
+  <div class="cmd-window">
+    <div id="cmd-content">
+      <div id="output"></div>
+      <div id="input-line" class="input-line">
+        <div id="prompt" class="prompt-color"></div>&nbsp;
+        <div>
+          <input type="text" id="cmdline" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                 autofocus/>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
 <div id="header">
   <div class="container">
