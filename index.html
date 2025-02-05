@@ -57,9 +57,9 @@
       <ul id="sidemenu">
         <li><a href="#about" class="scramble-effect" data-text="About">About</a></li>
         <li><a href="#services" class="scramble-effect" data-text="Services">Services</a></li>
-        <li><a href="#portfolio" class="scramble-effect">Portfolio</a></li>
-        <li><a href="writeups.html" class="scramble-effect">Blog</a></li>
-        <li><a href="#contact" class="scramble-effect">Contact</a></li>
+        <li><a href="#portfolio" class="scramble-effect" data-text="Portfolio">Portfolio</a></li>
+        <li><a href="writeups.html" class="scramble-effect" data-text="Blog">Blog</a></li>
+        <li><a href="#contact" class="scramble-effect" data-text="Contact">Contact</a></li>
         <i class="fa-solid fa-xmark" onclick="closemenu()"></i>
       </ul>
       <i class="fa-solid fa-bars" onclick="openmenu()"></i>
@@ -112,9 +112,9 @@
           Software / Hardware fundamentals as well as some solid Software Engineering and Low-Level
           programming interests learnt through studies and multiple projects through my cursus.</p>
         <div class="tab-titles">
-          <p class="tab-links active-link" onclick="opentab('skills')">Skills</p>
-          <p class="tab-links" onclick="opentab('experience')">Experience</p>
-          <p class="tab-links" onclick="opentab('education')">Education</p>
+          <p class="tab-links active-link" onclick="opentab('skills')" data-text="Skills">Skills</p>
+          <p class="tab-links" onclick="opentab('experience')" data-text="Experience">Experience</p>
+          <p class="tab-links" onclick="opentab('education')" data-text="Education">Education</p>
         </div>
         <div class="tab-contents active-tab" id="skills">
           <ul>
@@ -410,7 +410,7 @@
         <p>I can give you some tips and help you in certain domain for your study.
           <br>Contact me to agree on what subject we can work together!
         </p>
-        <a href="#contact">Contact me</a>
+        <a href="#contact" class="scramble-effect" data-text="Contact me">Contact me</a>
       </div>
 
       <div>
@@ -419,7 +419,7 @@
         <p>I'm open to any proposition of software development or Machine learning project.
           <br>Don't hesitate to contact me to agree on a project development.
         </p>
-        <a href="#contact">Contact me</a>
+        <a href="#contact" class="scramble-effect" data-text="Contact me">Contact me</a>
       </div>
 
       <div>
@@ -428,7 +428,7 @@
         <p>During my free time I love to create cinematographic content.
           <br>You can contact me if you have a video project you would like to build with me!
         </p>
-        <a href="#contact">Contact me</a>
+        <a href="#contact" class="scramble-effect" data-text="Contact me">Contact me</a>
       </div>
     </div>
   </div>
@@ -601,7 +601,7 @@
         </div>
       </div>
     </div>
-    <a href="https://github.com/2Tricky4u?tab=repositories" class="btn">See more</a>
+    <a href="https://github.com/2Tricky4u?tab=repositories" class="btn" data-text="See more">See more</a>
     <div><p>Please note that few projects are actually on my private repos on Github as it is some University projects.
       Don't hesitate to contact me to take a glimpse at the source code.</p></div>
   </div>
@@ -620,14 +620,14 @@
           <a href="https://linkedin.com/in/xavier-ogay"><i class="fa-brands fa-linkedin"></i></a>
           <a href="https://people.epfl.ch/xavier.ogay"><i class="fa-solid fa-user"></i></a>
         </div>
-        <a href="#CV" class="btn btn2" onclick="openCV()" id="cv_btn">Show CV</a>
+        <a href="#CV" class="btn btn2" onclick="openCV()" id="cv_btn" data-text="Show CV">Show CV</a>
       </div>
       <div class="contact-right">
         <form name="submit-to-google-sheet">
           <input type="text" name="Name" placeholder="Your Name" required>
           <input type="email" name="email" placeholder="Your Email" required>
           <textarea name="Message" rows="6" placeholder="Your Message"></textarea>
-          <button type="submit" class="btn btn2">Submit</button>
+          <button type="submit" class="btn btn2" data-text="Submit">Submit</button>
         </form>
         <span id="msg"></span>
       </div>
@@ -645,8 +645,9 @@
 
 <script src="js/contact.js"></script>
 <script src="js/blob.js"></script>
-<script src="js/glitch.js"></script>
 <script src="js/index.js"></script>
+<script src="js/glitch.js"></script>
+
 
 </body>
 </html>
