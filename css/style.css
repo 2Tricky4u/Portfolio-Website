@@ -445,7 +445,8 @@ nav ul li a:hover::after{
   padding: 40px;
   font-size: 13px;
   font-weight: 300;
-  border-radius: 10px;
+  /*border-radius: 10px;*/
+  border-radius: 2px;
   transition: background 0.5s, transform 0.5s;
 }
 
@@ -866,5 +867,8 @@ nav .fa-solid{
 
 .xp-border {
   padding: 5px;
+  align-content: center;
+  align-items: center;
+  justify-content: center;
 }
 
