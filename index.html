@@ -77,6 +77,31 @@
       });
     });
   </script>
+  <script>
+    function updateLoadingBar() {
+      const scrollTop = document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollPercentage = scrollTop / scrollHeight;
+
+      const browserWidth = document.documentElement.clientWidth;
+      const browserHeight = document.documentElement.clientHeight;
+      const totalSlots = Math.floor(browserWidth / 4.5);
+      const filledSlots = Math.round(scrollPercentage * totalSlots);
+
+      let bar = "[ ";
+      for (let i = 0; i < totalSlots; i++) {
+        bar += (i < filledSlots) ? "█" : ".";
+      }
+      bar += " ]";
+
+      document.getElementById("loading-bar").innerText = bar;
+    }
+
+    // Update on scroll and resize
+    document.addEventListener("scroll", updateLoadingBar);
+    window.addEventListener("resize", updateLoadingBar);
+    updateLoadingBar();
+  </script>
 </head>
 
 
@@ -115,7 +140,7 @@
   </div>
 </div>
 
-
+<div id="loading-bar"></div>
 
 <div id="header">
   <div class="container">
