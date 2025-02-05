@@ -80,7 +80,7 @@ nav{
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  z-index: 100;
+  z-index: 10000;
   visibility: hidden;
   opacity: 0;
   animation: show-content 1.5s ease-in-out forwards;
@@ -104,6 +104,7 @@ nav ul li{
   display: inline-block;
   list-style: none;
   margin: 10px 20px;
+  z-index: 10;
 }
 
 nav ul li a{
@@ -686,7 +687,7 @@ nav .fa-solid{
     width: 200px;
     height: 100vh;
     padding-top: 50px;
-    z-index: 1000000;
+    z-index: 10;
     transition: right 0.3s;
   }
 
@@ -1029,7 +1030,7 @@ nav .fa-solid{
   bottom: 10px;
   left: 0;
   color: var(--red-lust);
-  z-index: 9999;
+  z-index: 9;
 }
 
 /* blob */
@@ -1065,4 +1066,13 @@ nav .fa-solid{
     rotate: 360deg;
   }
 }
+
+#sidemenu {
+  z-index: 10;
+}
+
+ul#sidemenu{
+  z-index: 10;
+}
+
 
