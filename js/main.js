@@ -54,6 +54,7 @@ var files = (function () {
     "about.txt": "This website was built by Xavier Ogay.\nFeel free to explore!",
     "contact.txt": "Contact at bottom of the page",
     "projects.txt": "Check out my projects in the portfolio section.",
+    "blog.txt": "This is where the interesting things are!",
     "resume.txt": "CV available at bottom page."
   };
   return {
