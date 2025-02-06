@@ -5,7 +5,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Understanding Phishing Attacks</title>
-  <link rel="stylesheet" type="text/css" href="/css/style.css">
+  <link rel="stylesheet" type="text/css" href="/css/writeup.css">
   <link rel="icon" href="/img/X.ico">
   <!--
   <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.25.0/themes/prism.min.css" rel="stylesheet" />
@@ -31,8 +31,11 @@
       <i class="fa-solid fa-bars" onclick="openmenu()"></i>
     </nav>
 
-    <h1 id="posttitle">Practical Binary Analysis - Dennis Andriesse</h1>
-    <p>Welcome to my blog, where I dive into the fascinating world of low-level software analysis with <i>Practical Binary Analysis</i> by Dennis Andriesse. As I work through this essential guide, I'll be summarizing key concepts, sharing insights, and tackling hands-on exercises to break down the often complex and technical aspects of binary analysis. Whether you're a seasoned reverse engineer or a curious newcomer, join me on this journey as we explore the tools and techniques used to dissect software at the binary level and uncover the hidden mechanics behind computer programs.
+    <h1 class="posttitle">Practical Binary Analysis - Dennis Andriesse</h1>
+    <p>Welcome to my blog! <br><br> where I will dive into the fascinating world of low-level software analysis with <i>Practical Binary Analysis</i> by Dennis Andriesse.<br><br>
+      As I work through this essential guide, I'll be summarizing key concepts, sharing insights, and tackling hands-on exercises to break down the often complex and technical aspects of binary analysis.<br>
+      <br>Whether you're a seasoned reverse engineer or a curious newcomer, join me on this journey as we explore the tools and techniques used to dissect software at the binary level and uncover the hidden mechanics behind computer programs.
+      <br>
     </p>
     <br>
     <h2>Chapter 1 - Anatomy of Binary</h2>
@@ -52,26 +55,32 @@
     <img src="f1_1.png" alt="Compilation details" style="width: 100%; height: auto;">
     <br>
     <br>
-    <h4>Preprocessing</h4>
+    <h3>Preprocessing</h3>
+
+    <p><br>
+    Preprocessing is the first phase in the compilation process where all the macros and directives are expanded. <br>
+    This is done to make the source code cleaner and ready for compilation. During this phase, any <i>#include</i> directives, which bring in external header files, and <i>#define</i> macros, which define constants or shortcuts, are fully expanded.
     <br>
-    Preprocessing is the first phase in the compilation process where all the macros and directives are expanded. This is done to make the source code cleaner and ready for compilation. During this phase, any <i>#include</i> directives, which bring in external header files, and <i>#define</i> macros, which define constants or shortcuts, are fully expanded.
     <br>
+    </p>
+    <h3>Compilation</h3>
+    <p>
     <br>
-    <h4>Compilation</h4>
-    <br>
-    The next step in compiling a C program is the <b>compilation phase</b>, where the preprocessed C code is translated into assembly language. Compilers translate the code into assembly language, which is close to machine code but still human-readable. Then, a dedicated assembler does the final conversion into machine code for the processor. This modularity makes life easier for compiler developers.
-    The compilation phase isn't just about translation; it’s also where heavy optimization takes place. Tools like GCC allow you to control this with flags like -O0 (no optimization) to -O3 (maximum optimization). Optimizations can affect the final assembly output, making your program faster and more efficient, though at the cost of readability when you inspect the disassembled code.
-    Another neat aspect of the assembly code generated during this phase is that it still preserves <b>symbolic information</b>.
+    The next step in compiling a C program is the <b>compilation phase</b>, where the preprocessed C code is translated into assembly language. <br>
+    Compilers translate the code into assembly language, which is close to machine code but still human-readable. Then, a dedicated assembler does the final conversion into machine code for the processor. This modularity makes life easier for compiler developers.
+    <br><br>The compilation phase isn't just about translation; it’s also where heavy optimization takes place. Tools like GCC allow you to control this with flags like <i>-O0</i> (no optimization) to <i>-O3</i> (maximum optimization). Optimizations can affect the final assembly output, making your program faster and more efficient, though at the cost of readability when you inspect the disassembled code.
+    <br>Another neat aspect of the assembly code generated during this phase is that it still preserves <b>symbolic information</b>.
     However, later on, when you deal with stripped binaries—where symbols are removed—you won’t have this luxury. In such cases, disassembling the code becomes significantly harder!
     <br>
     <br>
-    <h4>Assembly</h4>
+    </p>
+    <h3>Assembly</h3>
     <br>
     <br>
-    <h4>Linking</h4>
+    <h3>Linking</h3>
     <br>
-    <h3><u>Exercises</u></h3>
-
+    <h2><u>Exercises</u></h2>
+    <br>
     <ol>
       <li><strong><b>Locating Functions</b></strong>
         <p>Write a C program that contains several functions and compile it into an assembly file, an object file, and an executable binary, respectively. Try to locate the functions you wrote in the assembly file and in the disassembled object file and executable. Can you see the correspondence between the C code and the assembly code? Finally, strip the executable and try to identify the functions again.</p>
@@ -93,18 +102,18 @@
     </ol>
 
   </div>
-</div>
-<div class="copyright">
-  <p><i class="fa-regular">
-    ██████╗░████████╗██████╗░██╗░█████╗░██╗░░██╗██╗░░░██╗░░██╗██╗██╗░░░██╗
-    ╚════██╗╚══██╔══╝██╔══██╗██║██╔══██╗██║░██╔╝╚██╗░██╔╝░██╔╝██║██║░░░██║
-    ░░███╔═╝░░░██║░░░██████╔╝██║██║░░╚═╝█████═╝░░╚████╔╝░██╔╝░██║██║░░░██║
-    ██╔══╝░░░░░██║░░░██╔══██╗██║██║░░██╗██╔═██╗░░░╚██╔╝░░███████║██║░░░██║
-    ███████╗░░░██║░░░██║░░██║██║╚█████╔╝██║░╚██╗░░░██║░░░╚════██║╚██████╔╝
-    ╚══════╝░░░╚═╝░░░╚═╝░░╚═╝╚═╝░╚════╝░╚═╝░░╚═╝░░░╚═╝░░░░░░░░╚═╝░╚═════╝░</i> </p>
-  <p style="margin-top: 20px"><i class="fa-regular fa-copyright"></i> Copyright - Xavier Ogay - 2022-2024</p>
+  <div id="footer-container"></div>
 </div>
 
+<script>
+  fetch("/footer.html")
+    .then(response => response.text())
+    .then(data => {
+      document.getElementById("footer-container").innerHTML = data;
+    })
+    .catch(error => console.error("Error loading the footer:", error));
+</script>
+<script src="/js/footer.js"></script>
 <!--<script src="/js/scripts.js"></script>-->
 </body>
 </html>

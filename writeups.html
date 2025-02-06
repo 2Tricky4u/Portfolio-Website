@@ -5,7 +5,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Xavier's Blog</title>
-  <link rel="stylesheet" type="text/css"  href="css/style.css">
+  <link rel="stylesheet" type="text/css"  href="css/writeup.css">
   <link rel="icon" href="img/X.ico">
   <script src="https://kit.fontawesome.com/82f3e7b61a.js" crossorigin="anonymous"></script>
 </head>
@@ -25,7 +25,7 @@
       <i class="fa-solid fa-bars" onclick="openmenu()"></i>
     </nav>
 
-    <h1 id="posts">Posts</h1>
+    <h1 id="posts"># Posts</h1>
 
     <ul id="postsul">
 
@@ -56,18 +56,18 @@
       -->
     </ul>
   </div>
-</div>
-<div class="copyright">
-  <p><i class="fa-regular">
-    ██████╗░████████╗██████╗░██╗░█████╗░██╗░░██╗██╗░░░██╗░░██╗██╗██╗░░░██╗
-    ╚════██╗╚══██╔══╝██╔══██╗██║██╔══██╗██║░██╔╝╚██╗░██╔╝░██╔╝██║██║░░░██║
-    ░░███╔═╝░░░██║░░░██████╔╝██║██║░░╚═╝█████═╝░░╚████╔╝░██╔╝░██║██║░░░██║
-    ██╔══╝░░░░░██║░░░██╔══██╗██║██║░░██╗██╔═██╗░░░╚██╔╝░░███████║██║░░░██║
-    ███████╗░░░██║░░░██║░░██║██║╚█████╔╝██║░╚██╗░░░██║░░░╚════██║╚██████╔╝
-    ╚══════╝░░░╚═╝░░░╚═╝░░╚═╝╚═╝░╚════╝░╚═╝░░╚═╝░░░╚═╝░░░░░░░░╚═╝░╚═════╝░</i> </p>
-  <p style="margin-top: 20px"><i class="fa-regular fa-copyright"></i> Copyright - Xavier Ogay - 2022-2024</p>
+  <div id="footer-container"></div>
 </div>
 
-<script src="js/scripts.js"></script>
+
+<script>
+  fetch("/footer.html")
+    .then(response => response.text())
+    .then(data => {
+      document.getElementById("footer-container").innerHTML = data;
+    })
+    .catch(error => console.error("Error loading the footer:", error));
+</script>
+<script src="js/footer.js"></script>
 </body>
 </html>
