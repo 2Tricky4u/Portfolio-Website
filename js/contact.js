@@ -66,7 +66,7 @@ let show = false
 
 function openCV() {
   if (!show) {
-    cv.innerHTML = "<iframe src='https://drive.google.com/file/d/1GWYrNXJeoS9Lcgki2MARIE6lajL_QgkH/preview#toolbar=0' height='510' width='50%'/>"
+    cv.innerHTML = "<iframe src='https://drive.google.com/file/d/1iE-Lads5ZBv0ahE_UtdewquRF31xV09l/preview#toolbar=0' height='510' width='50%'/>"
     show = true
     txt.innerHTML = "Hide CV"
   } else {
@@ -74,6 +74,17 @@ function openCV() {
     show = false
     txt.innerHTML = "Show CV"
   }
+}
+
+function downloadCV() {
+  const cvUrl = "https://drive.google.com/uc?export=download&id=1iE-Lads5ZBv0ahE_UtdewquRF31xV09l";
+
+  const link = document.createElement("a"); // Create a temporary link element
+  link.href = cvUrl;
+  link.download = "Xavier_Ogay_CV.pdf"; // Suggested file name
+  document.body.appendChild(link); // Append to document
+  link.click(); // Trigger download
+  document.body.removeChild(link); // Clean up
 }
 
 var canvas = document.getElementById('canvas'),
