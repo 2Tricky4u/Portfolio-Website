@@ -66,6 +66,7 @@ canvas {
 #header{
   width: 100%;
   height: 100vh;
+  min-height: 100vh;
   /*background-image: url("../img/background.png");
   background-size: cover;
   background-position: center;*/
@@ -73,6 +74,7 @@ canvas {
 
 .container{
   padding: 10px 10%;
+  min-height: 100vh;
 }
 
 nav{
@@ -80,7 +82,7 @@ nav{
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  z-index: 10000;
+  z-index: 10;
   visibility: hidden;
   opacity: 0;
   animation: show-content 1.5s ease-in-out forwards;
@@ -640,6 +642,10 @@ form .btn2{
 
 }
 
+.copyright i {
+  color: var(--red-dark);
+}
+
 /*--------small screen----*/
 nav .fa-solid{
   display: none;
@@ -677,6 +683,13 @@ nav .fa-solid{
   nav .fa-solid{
     display: block;
     font-size: 25px;
+  }
+
+  nav{
+    z-index: 10;
+    animation: none;
+    opacity: 1;
+    visibility: visible;
   }
 
   nav ul {
@@ -1065,14 +1078,6 @@ nav .fa-solid{
   to {
     rotate: 360deg;
   }
-}
-
-#sidemenu {
-  z-index: 10;
-}
-
-ul#sidemenu{
-  z-index: 10;
 }
 
 
