@@ -5,7 +5,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Xavier's Blog</title>
-  <link rel="stylesheet" type="text/css"  href="css/writeup.css">
+  <link rel="stylesheet" type="text/css" href="css/writeup.css">
   <link rel="icon" href="img/X.ico">
   <script src="https://kit.fontawesome.com/82f3e7b61a.js" crossorigin="anonymous"></script>
 </head>
@@ -13,13 +13,14 @@
 <div id="header">
   <div class="container">
     <nav>
-      <img src="img/logo.png" class="logo">
+      <a href="index.html">
+        <img src="img/logo.png" class="logo" alt="logo">
+      </a>
       <ul id="sidemenu">
-        <li><a href="index.html#about">About</a> </li>
-        <li><a href="index.html#services">Services</a> </li>
-        <li><a href="index.html#portfolio">Portfolio</a> </li>
-        <li><a href="index.html#contact">Contact</a> </li>
-        <li><a href="writeups.html">Blog</a></li>
+        <li><a href="index.html#about" class="scramble-effect" data-text="About">About</a></li>
+        <li><a href="index.html#services" class="scramble-effect" data-text="Services">Services</a></li>
+        <li><a href="index.html#portfolio" class="scramble-effect" data-text="Portfolio">Portfolio</a></li>
+        <li><a href="index.html#contact" class="scramble-effect" data-text="Contact">Contact</a></li>
         <i class="fa-solid fa-xmark" onclick="closemenu()"></i>
       </ul>
       <i class="fa-solid fa-bars" onclick="openmenu()"></i>
@@ -68,6 +69,7 @@
     })
     .catch(error => console.error("Error loading the footer:", error));
 </script>
+<script src="js/glitch.js"></script>
 <script src="js/footer.js"></script>
 </body>
 </html>

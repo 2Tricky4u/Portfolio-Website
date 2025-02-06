@@ -11,7 +11,7 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.25.0/themes/prism.min.css" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.25.0/prism.min.js"></script>-->
   <script src="https://kit.fontawesome.com/82f3e7b61a.js" crossorigin="anonymous"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/themes/prism.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/themes/prism.min.css" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/prism.min.js"></script>
 
 </head>
@@ -19,22 +19,28 @@
 <div id="header">
   <div class="container">
     <nav>
-      <img src="/img/logo.png" class="logo">
+      <a href="../../index.html">
+        <img src="/img/logo.png" class="logo">
+      </a>
       <ul id="sidemenu">
-        <li><a href="../../index.html#about">About</a> </li>
-        <li><a href="../../index.html#services">Services</a> </li>
-        <li><a href="../../index.html#portfolio">Portfolio</a> </li>
-        <li><a href="../../index.html#contact">Contact</a> </li>
-        <li><a href="../../writeups.html">Blog</a></li>
+        <li><a href="../../index.html#about" class="scramble-effect" data-text="About">About</a></li>
+        <li><a href="../../index.html#services" class="scramble-effect" data-text="Services">Services</a></li>
+        <li><a href="../../index.html#portfolio" class="scramble-effect" data-text="Portfolio">Portfolio</a></li>
+        <li><a href="../../writeups.html" class="scramble-effect" data-text="Blog">Blog</a></li>
+        <li><a href="../../index.html#contact" class="scramble-effect" data-text="Contact">Contact</a></li>
         <i class="fa-solid fa-xmark" onclick="closemenu()"></i>
       </ul>
       <i class="fa-solid fa-bars" onclick="openmenu()"></i>
     </nav>
 
     <h1 class="posttitle">Practical Binary Analysis - Dennis Andriesse</h1>
-    <p>Welcome to my blog! <br><br> where I will dive into the fascinating world of low-level software analysis with <i>Practical Binary Analysis</i> by Dennis Andriesse.<br><br>
-      As I work through this essential guide, I'll be summarizing key concepts, sharing insights, and tackling hands-on exercises to break down the often complex and technical aspects of binary analysis.<br>
-      <br>Whether you're a seasoned reverse engineer or a curious newcomer, join me on this journey as we explore the tools and techniques used to dissect software at the binary level and uncover the hidden mechanics behind computer programs.
+    <p>Welcome to my blog! <br><br> where I will dive into the fascinating world of low-level software analysis with <i>Practical
+      Binary Analysis</i> by Dennis Andriesse.<br><br>
+      As I work through this essential guide, I'll be summarizing key concepts, sharing insights, and tackling hands-on
+      exercises to break down the often complex and technical aspects of binary analysis.<br>
+      <br>Whether you're a seasoned reverse engineer or a curious newcomer, join me on this journey as we explore the
+      tools and techniques used to dissect software at the binary level and uncover the hidden mechanics behind computer
+      programs.
       <br>
     </p>
     <br>
@@ -58,21 +64,31 @@
     <h3>Preprocessing</h3>
 
     <p><br>
-    Preprocessing is the first phase in the compilation process where all the macros and directives are expanded. <br>
-    This is done to make the source code cleaner and ready for compilation. During this phase, any <i>#include</i> directives, which bring in external header files, and <i>#define</i> macros, which define constants or shortcuts, are fully expanded.
-    <br>
-    <br>
+      Preprocessing is the first phase in the compilation process where all the macros and directives are expanded. <br>
+      This is done to make the source code cleaner and ready for compilation. During this phase, any <i>#include</i>
+      directives, which bring in external header files, and <i>#define</i> macros, which define constants or shortcuts,
+      are fully expanded.
+      <br>
+      <br>
     </p>
     <h3>Compilation</h3>
     <p>
-    <br>
-    The next step in compiling a C program is the <b>compilation phase</b>, where the preprocessed C code is translated into assembly language. <br>
-    Compilers translate the code into assembly language, which is close to machine code but still human-readable. Then, a dedicated assembler does the final conversion into machine code for the processor. This modularity makes life easier for compiler developers.
-    <br><br>The compilation phase isn't just about translation; it’s also where heavy optimization takes place. Tools like GCC allow you to control this with flags like <i>-O0</i> (no optimization) to <i>-O3</i> (maximum optimization). Optimizations can affect the final assembly output, making your program faster and more efficient, though at the cost of readability when you inspect the disassembled code.
-    <br>Another neat aspect of the assembly code generated during this phase is that it still preserves <b>symbolic information</b>.
-    However, later on, when you deal with stripped binaries—where symbols are removed—you won’t have this luxury. In such cases, disassembling the code becomes significantly harder!
-    <br>
-    <br>
+      <br>
+      The next step in compiling a C program is the <b>compilation phase</b>, where the preprocessed C code is
+      translated into assembly language. <br>
+      Compilers translate the code into assembly language, which is close to machine code but still human-readable.
+      Then, a dedicated assembler does the final conversion into machine code for the processor. This modularity makes
+      life easier for compiler developers.
+      <br><br>The compilation phase isn't just about translation; it’s also where heavy optimization takes place. Tools
+      like GCC allow you to control this with flags like <i>-O0</i> (no optimization) to <i>-O3</i> (maximum
+      optimization). Optimizations can affect the final assembly output, making your program faster and more efficient,
+      though at the cost of readability when you inspect the disassembled code.
+      <br>Another neat aspect of the assembly code generated during this phase is that it still preserves <b>symbolic
+      information</b>.
+      However, later on, when you deal with stripped binaries—where symbols are removed—you won’t have this luxury. In
+      such cases, disassembling the code becomes significantly harder!
+      <br>
+      <br>
     </p>
     <h3>Assembly</h3>
     <br>
@@ -83,7 +99,10 @@
     <br>
     <ol>
       <li><strong><b>Locating Functions</b></strong>
-        <p>Write a C program that contains several functions and compile it into an assembly file, an object file, and an executable binary, respectively. Try to locate the functions you wrote in the assembly file and in the disassembled object file and executable. Can you see the correspondence between the C code and the assembly code? Finally, strip the executable and try to identify the functions again.</p>
+        <p>Write a C program that contains several functions and compile it into an assembly file, an object file, and
+          an executable binary, respectively. Try to locate the functions you wrote in the assembly file and in the
+          disassembled object file and executable. Can you see the correspondence between the C code and the assembly
+          code? Finally, strip the executable and try to identify the functions again.</p>
         <!-- Code Box Example -->
         <div class="code-box">
           <pre><code class="language-javascript">
@@ -97,7 +116,10 @@
       </li>
       <br>
       <li><strong><b>Sections</b></strong>
-        <p>As you've seen, ELF binaries (and other types of binaries) are divided into sections. Some sections contain code, and others contain data. Why do you think the distinction between code and data sections exists? How do you think the loading process differs for code and data sections? Is it necessary to copy all sections into memory when a binary is loaded for execution?</p>
+        <p>As you've seen, ELF binaries (and other types of binaries) are divided into sections. Some sections contain
+          code, and others contain data. Why do you think the distinction between code and data sections exists? How do
+          you think the loading process differs for code and data sections? Is it necessary to copy all sections into
+          memory when a binary is loaded for execution?</p>
       </li>
     </ol>
 
@@ -114,6 +136,7 @@
     .catch(error => console.error("Error loading the footer:", error));
 </script>
 <script src="/js/footer.js"></script>
+<script src="/js/glitch.js"></script>
 <!--<script src="/js/scripts.js"></script>-->
 </body>
 </html>
