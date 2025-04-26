@@ -483,21 +483,25 @@ nav ul li a:hover::after{
   padding: 50px 0;
 }
 
-.work-list{
+.work-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   grid-gap: 40px;
   margin-top: 50px;
 }
 
-.work{
+.work {
+  width: 100%;
   border-radius: 2px;
   position: relative;
   overflow: hidden;
+  aspect-ratio: auto;
 }
 
-.work img{
+.work img {
   width: 100%;
+  height: 100%;
+  object-fit: cover;
   border-radius: 2px;
   display: block;
   transition: transform 0.5s;
@@ -840,8 +844,10 @@ nav .fa-solid{
 }
 
 .xp-container {
-  display: inline-block;
-  width: fit-content;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
   border: 2px solid #808080;
   box-shadow:
     inset -1px -1px 0px #808080,  /* Dark bottom-right */
@@ -858,10 +864,11 @@ nav .fa-solid{
   font-weight: bold;
   padding: 3px 10px;
   text-align: left;
-  border-bottom: 2px solid #808080; /* Darker separator */
+  border-bottom: 2px solid #808080;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .xp-close-btn {
@@ -886,10 +893,11 @@ nav .fa-solid{
 }
 
 .xp-border {
-  padding: 5px;
-  align-content: center;
-  align-items: center;
-  justify-content: center;
+  flex-grow: 1;
+  padding: 1px;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
 }
 
 /* CMD */
