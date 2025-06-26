@@ -436,11 +436,57 @@
 </div>
 
 <!------Portfolio------->
+<div class="video-popup" id="videoPopup">
+  <div class="video-close-btn">x</div>
+  <iframe id="videoIframe" width="100%" height="100%" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 <div id="portfolio">
   <div class="container">
     <h1 class="subtitle">My Projects</h1>
     <div class="work-list">
+      <div class="xp-container">
+        <div class="xp-title-bar">
+          Symbolic LLVM Memory Sandboxing for Safe and Deterministic WebAssembly-Based Execution - Slides
+          <div class="xp-close-btn">x</div>
+        </div>
+        <div class="xp-border">
+          <div class="work">
+            <img src="img/Master_proj.png" alt="">
+            <div class="layer">
+              <h3>Master Thesis</h3>
+              <p>A symbolic memory sandboxing for LLVM to secure WASM smart contracts.
+                Built a static analysis framework for memory safety using canonical
+                symbolic expressions, phi-aware state merging, and loop-bound inference.
+                Emit optimized checks, tested on real-world kernels </p>
+              <a
+                href="doc/MP_slides.pdf"><i
+                class="fa-solid fa-arrow-up-right-from-square"></i></a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="xp-container">
+        <div class="xp-title-bar">
+          Symbolic LLVM Memory Sandboxing for Safe and Deterministic WebAssembly-Based Execution
+          <div class="xp-close-btn">x</div>
+        </div>
+        <div class="xp-border">
+          <div class="work">
+            <img src="img/MP.png" alt="">
+            <div class="layer">
+              <h3>Master Thesis</h3>
+              <p>A symbolic memory sandboxing for LLVM to secure WASM smart contracts.
+                Built a static analysis framework for memory safety using canonical
+                symbolic expressions, phi-aware state merging, and loop-bound inference.
+                Emit optimized checks, tested on real-world kernels </p>
+              <a
+                href="doc/Master_Thesis.pdf"><i
+                class="fa-solid fa-arrow-up-right-from-square"></i></a>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="xp-container">
         <div class="xp-title-bar">
           De-occlusion of occluded vehicle images from drone video
@@ -456,6 +502,26 @@
                 models aimed at inpainting occluded vehicles to improves detection and data reliability.</p>
               <a
                 href="https://github.com/2Tricky4u/Bachelor-Thesis-De-occlusion-of-occluded-vehicle-images-from-drone-video"><i
+                class="fa-solid fa-arrow-up-right-from-square"></i></a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="xp-container hover-element">
+        <div class="xp-title-bar">
+          Computer Graphics: Toon shadering
+          <div class="xp-close-btn">x</div>
+        </div>
+        <div class="xp-border">
+          <div class="work">
+            <img src="img/graph.png" alt="">
+            <div class="layer">
+              <p>Developed an interactive non-photorealistic rendering engine in WebGL, integrating toon shading
+                with dynamic scene effects. Customized the Blinn-Phong model for quantized lighting, hue modulation,
+                and dynamic outlines using multi-pass buffers. Created an animated Blender scene with controllable
+                camera and lighting to demonstrate the shader effects.</p>
+              <a
+                href="doc/compgraph/proposal.html"><i
                 class="fa-solid fa-arrow-up-right-from-square"></i></a>
             </div>
           </div>
@@ -697,7 +763,7 @@
         </div>
         <div class="xp-border">
           <div class="work">
-            <img src="img/cpu.png" alt="">
+            <img src="img/CPU2.png" alt="">
             <div class="layer">
               <h3>CPU in ASM/VHDL</h3>
               <p>We simulated the mechanism of a basic CPU on a FPGA mainly in ASM and VHDL</p>
@@ -755,6 +821,7 @@
 <script src="js/blob.js"></script>
 <script src="js/index.js"></script>
 <script src="js/glitch.js"></script>
+<script src="js/graph.js"></script>
 
 
 </body>
