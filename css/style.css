@@ -900,6 +900,27 @@ nav .fa-solid{
   justify-content: stretch;
 }
 
+.xp-play-btn {
+  width: 16px;
+  height: 16px;
+  background: #c0c0c0;
+  color: black;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+  line-height: 14px;
+  border: 1px solid #808080;
+  display: inline-block;
+  cursor: pointer;
+  user-select: none;
+  padding-top: 1px;
+}
+
+.xp-play-btn:hover {
+  background: green;
+  color: white;
+}
+
 /* CMD */
 #cmd-content {
   position: relative;

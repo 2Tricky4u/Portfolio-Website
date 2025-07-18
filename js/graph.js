@@ -1,47 +1,51 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // Flag to track if the video is already playing
   let isVideoPlaying = false;
 
-  // Function to trigger the hover effect
   function triggerHoverEffect() {
     const videoPopup = document.getElementById('videoPopup');
     const iframe = document.getElementById('videoIframe');
 
-    // Only play the video if it isn't already playing
     if (!isVideoPlaying) {
       iframe.src = 'https://www.youtube.com/embed/3y6X-bz8nNo?autoplay=1';
       videoPopup.style.display = 'flex';
-      isVideoPlaying = true;  // Set the flag to true once the video starts
+      isVideoPlaying = true;
     }
   }
 
-  // Function to close the video popup and stop the video
   function closeVideoPopup() {
     const videoPopup = document.getElementById('videoPopup');
     const iframe = document.getElementById('videoIframe');
 
-    iframe.src = '';  // Stop the video
-    videoPopup.style.display = 'none';  // Hide the popup
-    isVideoPlaying = false;  // Reset the flag when video is closed
+    iframe.src = '';
+    videoPopup.style.display = 'none';
+    isVideoPlaying = false;
   }
 
-  // Event listener for hover effect
-  const hoverElement = document.querySelector('.hover-element');
-  if (hoverElement) {
-    hoverElement.addEventListener('mouseenter', function() {
-      triggerHoverEffect();  // Trigger the hover effect
+  // Optional: remove hover behavior if you're replacing it entirely
+  // const hoverElement = document.querySelector('.hover-element');
+  // if (hoverElement) {
+  //   hoverElement.addEventListener('mouseenter', function() {
+  //     triggerHoverEffect();
+  //   });
+  // }
+
+  // Bind play button(s)
+  const playButtons = document.querySelectorAll('.xp-play-btn');
+  playButtons.forEach(btn => {
+    btn.addEventListener('click', function() {
+      triggerHoverEffect();
     });
-  }
+  });
 
-  // Event listener for the close button
+  // Close button inside the video popup
   const closeButton = document.querySelector('.video-close-btn');
   if (closeButton) {
     closeButton.addEventListener('click', function() {
-      closeVideoPopup();  // Close the video popup
+      closeVideoPopup();
     });
   }
 
-  // Expose the functions for manual triggering via the console
+  // Expose for manual testing
   window.triggerHoverEffect = triggerHoverEffect;
   window.closeVideoPopup = closeVideoPopup;
 });
