@@ -66,7 +66,7 @@ let show = false
 
 function openCV() {
   if (!show) {
-    cv.innerHTML = "<iframe src='https://drive.google.com/file/d/1-MBTczhQMnlvzgFF6v_-YOQwThhLJwo1/preview#toolbar=0' height='510' width='50%'/>"
+    cv.innerHTML = "<iframe src='https://drive.google.com/file/d/1QvlzlDPrODCkBERG-GFwfc5eGkK12XTU/preview#toolbar=0' height='510' width='50%'/>"
     show = true
     txt.innerHTML = "Hide CV"
   } else {
@@ -77,7 +77,7 @@ function openCV() {
 }
 
 function downloadCV() {
-  const cvUrl = "https://drive.google.com/uc?export=download&id=1-MBTczhQMnlvzgFF6v_-YOQwThhLJwo1";
+  const cvUrl = "https://drive.google.com/uc?export=download&id=1QvlzlDPrODCkBERG-GFwfc5eGkK12XTU";
 
   const link = document.createElement("a"); // Create a temporary link element
   link.href = cvUrl;
