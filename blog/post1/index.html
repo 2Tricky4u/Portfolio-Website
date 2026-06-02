@@ -94,33 +94,40 @@ strip --strip-all <file>     # remove .symtab/.strtab  (runtime keeps .dynsym)</
 
     <h3>Compilation</h3>
     <p>
-      GCC lowers the translation unit through its internal IR (GIMPLE → RTL) to architecture-specific assembly.
-      The optimization level is the critical variable for reverse engineering: <code>-O0</code> emits a nearly 1:1
-      mapping to the C source — every variable on the stack, every expression a separate instruction.
-      From <code>-O2</code> up, the compiler inlines aggressively, eliminates dead branches, unrolls loops,
+      GCC lowers the translation unit through its internal IR (<b>GIMPLE → RTL</b>) to architecture-specific assembly.
+      The optimization level is the critical variable for reverse engineering:
+      <code class="flag">-O0</code> emits a nearly 1:1 mapping to the C source — every variable on the stack,
+      every expression a separate instruction.
+      From <code class="flag">-O2</code> up, the compiler inlines aggressively, eliminates dead branches, unrolls loops,
       and can merge or reorder functions entirely, breaking the structural correspondence you’d expect.
-      Symbolic labels are still present in the <code>.s</code> output regardless of level.
+      Symbolic labels are still present in the <code class="sect">.s</code> output regardless of level.
     </p>
 
     <h3>Assembly</h3>
     <p>
       <code>as</code> translates mnemonics to opcodes and produces a <b>relocatable ELF object</b> (<code>.o</code>).
       External references have no resolved address yet — recorded as <b>relocation entries</b> in
-      <code>.rela.text</code> (RELA on x86-64: offset + type + symbol + addend),
+      <code class="sect">.rela.text</code> (RELA on x86-64: offset + type + symbol + addend),
       pointing the linker at every site that needs patching.
-      <code>file</code> will report the output as <i>ELF 64-bit LSB relocatable</i>;
-      a shared library built with <code>-fPIC -shared</code> comes out as <i>shared object</i> —
+      <code>file</code> reports the output as <i>ELF 64-bit LSB relocatable</i>;
+      a shared library built with <code class="flag">-fPIC -shared</code> comes out as <i>shared object</i> —
       position-independent, no fixed load address.
     </p>
-    <p>
-      Key sections in a <code>.o</code>:<br>
-      <code>.text</code> — executable code.<br>
-      <code>.data</code> — initialized globals (present in file, mapped RW).<br>
-      <code>.bss</code> — zero-initialized globals (no space in file, kernel zero-fills on load).<br>
-      <code>.rodata</code> — string literals and const arrays (mapped RO); inspect with <code>objdump -sj .rodata</code>.<br>
-      <code>.symtab</code> / <code>.strtab</code> — full symbol table, stripped in release builds.<br>
-      <code>.dynsym</code> — export/import table for the dynamic linker; survives <code>strip --strip-all</code>.
-    </p>
+    <p>Key sections in a <code>.o</code>:</p>
+    <dl class="sect-list">
+      <dt><code class="sect">.text</code></dt>
+      <dd>executable code</dd>
+      <dt><code class="sect">.data</code></dt>
+      <dd>initialized globals — present in file, mapped <b>RW</b></dd>
+      <dt><code class="sect">.bss</code></dt>
+      <dd>zero-initialized globals — no file space, kernel zero-fills on load</dd>
+      <dt><code class="sect">.rodata</code></dt>
+      <dd>string literals and const arrays — mapped <b>RO</b>, inspect with <code class="flag">objdump -sj .rodata</code></dd>
+      <dt><code class="sect">.symtab</code> / <code class="sect">.strtab</code></dt>
+      <dd>full symbol table — stripped in release builds</dd>
+      <dt><code class="sect">.dynsym</code></dt>
+      <dd>export/import table for the dynamic linker — survives <code class="flag">strip --strip-all</code></dd>
+    </dl>
 
     <h3>Linking</h3>
     <p>
@@ -128,26 +135,26 @@ strip --strip-all <file>     # remove .symtab/.strtab  (runtime keeps .dynsym)</
       resolves every relocation entry, assigns final virtual addresses, and emits the executable ELF.
     </p>
     <p>
-      <b>Static linking</b> (<code>-static</code>): merges all <code>.text</code>/<code>.data</code>/etc.
-      sections from <code>.o</code> files and <code>.a</code> archives, resolves all relocations to absolute
-      addresses. Fully self-contained — no <code>PT_INTERP</code>, no PLT indirection, calls are direct.
-      Larger binary (carries full libc), but no runtime dependency surprises; preferred for forensics and sandboxed
-      environments.
+      <b class="link-type">Static</b> <code class="flag">-static</code> — merges all
+      <code class="sect">.text</code> / <code class="sect">.data</code> / … sections from <code>.o</code> files
+      and <code>.a</code> archives, resolves all relocations to absolute addresses.
+      Fully self-contained — no <code>PT_INTERP</code>, no PLT indirection, direct calls.
+      Larger binary (carries full libc), but no runtime dependency surprises; preferred for forensics and sandboxed environments.
     </p>
     <p>
-      <b>Dynamic linking</b> (default): external symbols stay <code>UNDEF</code> in <code>.dynsym</code>.
-      A <code>PT_INTERP</code> segment names the runtime dynamic linker
+      <b class="link-type">Dynamic</b> (default) — external symbols stay <code>UNDEF</code> in
+      <code class="sect">.dynsym</code>. A <code>PT_INTERP</code> segment names the runtime linker
       (<code>/lib64/ld-linux-x86-64.so.2</code>), which maps the needed <code>.so</code>s and resolves symbols
       at load time — or lazily on first call via <b>PLT/GOT</b>: each external call goes through a PLT stub
-      that on first invocation falls through to the resolver, patches the GOT entry with the real address,
-      and subsequent calls jump through the GOT directly.
+      that on first invocation falls through to the resolver, patches the GOT entry with the real address;
+      subsequent calls jump through the GOT directly.
     </p>
     <p>
-      <b>LTO</b> (<code>-flto</code>): defers optimization to link time. GCC stores GIMPLE IR in object files
-      instead of machine code; <code>ld</code> then runs a second optimization pass across all translation units
-      simultaneously, enabling cross-TU inlining and dead function elimination. From a RE perspective,
-      LTO-built binaries have no function-level correspondence to source files, and aggressively inlined code
-      makes CFG reconstruction significantly harder.
+      <b class="link-type">LTO</b> <code class="flag">-flto</code> — defers optimization to link time.
+      GCC stores GIMPLE IR in object files instead of machine code; <code>ld</code> then runs a second
+      optimization pass across all translation units simultaneously, enabling cross-TU inlining and dead
+      function elimination. From a RE perspective, LTO-built binaries have no function-level correspondence
+      to source files, and aggressively inlined code makes CFG reconstruction significantly harder.
     </p>
 
     <div class="terminal-box">
@@ -163,23 +170,23 @@ strip --strip-all ./binary            # remove .symtab/.strtab  (keeps .dynsym)<
     </div>
 
     <p>
-      After <code>strip --strip-all</code>, function names and local symbols are gone — only the exports and
-      imports the dynamic linker depends on remain. CFG recovery falls back to heuristics:
+      After <code class="flag">strip --strip-all</code>, function names and local symbols are gone — only
+      the exports and imports the dynamic linker depends on remain. CFG recovery falls back to heuristics:
       function prologue patterns, cross-reference analysis, and section boundary detection.
     </p>
 
     <h3>Debug info</h3>
     <p>
-      <b>ELF + DWARF</b>: debug info is embedded directly in the binary as dedicated sections
-      (<code>.debug_info</code>, <code>.debug_line</code>, <code>.debug_abbrev</code>, …).
-      <code>strip --strip-debug</code> removes these without touching the symbol table;
-      <code>strip --strip-all</code> removes both. Shipped ELF binaries are typically fully stripped.
+      <b>ELF + DWARF</b> — debug info embedded directly as dedicated sections
+      (<code class="sect">.debug_info</code>, <code class="sect">.debug_line</code>,
+      <code class="sect">.debug_abbrev</code>, …).
+      <code class="flag">strip --strip-debug</code> removes these without touching the symbol table;
+      <code class="flag">strip --strip-all</code> removes both. Shipped ELF binaries are typically fully stripped.
     </p>
     <p>
-      <b>PE + PDB</b>: Windows uses a <i>separate</i> PDB (Program Database) file linked to the binary
-      via a GUID stored in the <code>IMAGE_DEBUG_DIRECTORY</code>. The binary itself carries almost no
-      debug info — the PDB is rarely shipped with a product, making it effectively absent for most RE work
-      unless the symbol server (<code>symsrv</code>) has it indexed.
+      <b>PE + PDB</b> — Windows uses a <i>separate</i> PDB (Program Database) file linked to the binary
+      via a GUID in <code>IMAGE_DEBUG_DIRECTORY</code>. The binary carries almost no debug info itself —
+      the PDB is rarely shipped, making it absent for most RE work unless indexed by a symbol server (<code>symsrv</code>).
     </p>
     <br>
     <h2><u>Exercises</u></h2>
