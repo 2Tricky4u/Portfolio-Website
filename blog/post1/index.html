@@ -15,12 +15,10 @@
   <title>Understanding Phishing Attacks</title>
   <link rel="stylesheet" type="text/css" href="/css/writeup.css">
   <link rel="icon" href="/img/X.ico">
-  <!--
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.25.0/themes/prism.min.css" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.25.0/prism.min.js"></script>-->
   <script src="https://kit.fontawesome.com/82f3e7b61a.js" crossorigin="anonymous"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/themes/prism.min.css" rel="stylesheet"/>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/prism.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script>
 
 </head>
 <body class="post1-font">
@@ -108,13 +106,21 @@
           code? Finally, strip the executable and try to identify the functions again.</p>
         <!-- Code Box Example -->
         <div class="code-box">
-          <pre><code class="language-javascript">
-          // This is a sample JavaScript code
-          function greet(name) {
-            return `Hello, ${name}!`;
-          }
-          console.log(greet('Xavier'));
-          </code></pre>
+          <pre><code class="language-c">#include &lt;stdio.h&gt;
+
+int add(int a, int b) {
+    return a + b;
+}
+
+int multiply(int a, int b) {
+    return a * b;
+}
+
+int main(void) {
+    printf("%d\n", add(3, 4));
+    printf("%d\n", multiply(3, 4));
+    return 0;
+}</code></pre>
         </div>
       </li>
       <br>
@@ -130,6 +136,7 @@
   <div id="footer-container"></div>
 </div>
 
+<script>hljs.highlightAll();</script>
 <script>
   fetch("/footer.html")
     .then(response => response.text())
