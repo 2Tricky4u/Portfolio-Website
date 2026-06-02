@@ -300,31 +300,17 @@ nav .fa-solid{
 }
 
 .code-box pre {
-  background-color: var(--black-grey) !important;
-  padding: 10px;
-  border-radius: 5px;
-  color: #f8f8f2;
-  overflow: auto;
-  text-shadow: none !important;
-  box-shadow: none !important;
-}
-
-.code-box code {
-  background-color: inherit !important;
-  color: inherit !important;
-  display: block;
-  white-space: pre-wrap;
-  word-break: break-all;
   padding: 0;
+  border-radius: 5px;
+  overflow: auto;
   margin: 0;
-  border: none;
-  text-shadow: none !important;
-  box-shadow: none !important;
 }
 
-.token {
-  text-shadow: none !important;
-  box-shadow: none !important;
+.code-box pre code.hljs {
+  border-radius: 5px;
+  font-family: 'Consolas', monospace;
+  font-size: 0.9em;
+  line-height: 1.6;
 }
 
 .xp-container {
