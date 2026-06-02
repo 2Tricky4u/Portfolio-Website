@@ -42,59 +42,145 @@
     <h1 class="posttitle">Practical Binary Analysis - Dennis Andriesse</h1>
     <h2>Chapter 1 - Anatomy of Binary</h2>
     <br>
-    <div class="code-box">
-      <pre><code>gcc -E -P</code></pre>
-      <p class="cmd-desc">
-        Stop compilation after preprocessing, where <code>-E</code> tells gcc to stop after preprocessing
-        and <code>-P</code> causes the compiler to omit debugging information.
-      </p>
 
-      <pre><code>gcc -S -masm=intel</code></pre>
-      <p class="cmd-desc">
-        The <code>-S</code> flag tells gcc to stop after the compilation stage and store the assembly files
-        to disk (<code>.s</code> is a conventional extension for assembly files). <code>-masm=intel</code>
-        emits assembly in Intel syntax rather than the default AT&amp;T syntax.
-      </p>
+    <div class="terminal-box">
+      <div class="terminal-header">
+        <span class="t-dot r"></span><span class="t-dot y"></span><span class="t-dot g"></span>
+        <span class="terminal-label">gcc pipeline</span>
+      </div>
+      <pre><code class="language-bash"># ── preprocessing ────────────────────────────────────────────────
+gcc -E -P <file>            # -E  stop after cpp
+                            # -P  omit line markers (# directives)
+
+# ── compilation ──────────────────────────────────────────────────
+gcc -S -masm=intel <file>   # -S         emit .s, stop before assembly
+                            # -masm=intel  Intel syntax  (≠ AT&T default)
+
+# ── assembly ─────────────────────────────────────────────────────
+gcc -c <file>               # compile + assemble → relocatable .o, no link
+
+# ── full pipeline ────────────────────────────────────────────────
+gcc <file> -o binary        # dynamically linked executable (default)
+gcc <file> -o binary -static  # statically linked, all deps embedded</code></pre>
     </div>
-    <br>
-    <h3>Compilation</h3>
-    <br>
-    <img src="f1_1-2.png" alt="Compilation details" style="width: 100%; height: auto;">
-    <br>
-    <br>
-    <h3>Preprocessing</h3>
 
-    <p><br>
-      Preprocessing is the first phase in the compilation process where all the macros and directives are expanded. <br>
-      This is done to make the source code cleaner and ready for compilation. During this phase, any <i>#include</i>
-      directives, which bring in external header files, and <i>#define</i> macros, which define constants or shortcuts,
-      are fully expanded.
-      <br>
-      <br>
+    <div class="terminal-box">
+      <div class="terminal-header">
+        <span class="t-dot r"></span><span class="t-dot y"></span><span class="t-dot g"></span>
+        <span class="terminal-label">inspection</span>
+      </div>
+      <pre><code class="language-bash">file <file>                  # ELF type + arch: relocatable / executable / shared object
+readelf --syms <file>        # symbol table  (long form of -s)
+readelf -r <file>            # relocation entries: what the linker must patch and how
+objdump -M intel -d <file>   # disassemble (Intel syntax)
+objdump -sj .rodata <file>   # hex+ascii dump of .rodata section
+strip --strip-all <file>     # remove .symtab/.strtab  (runtime keeps .dynsym)</code></pre>
+    </div>
+
+    <br>
+    <h3>Pipeline overview</h3>
+    <br>
+    <img src="f1_1-2.png" alt="Compilation pipeline" style="width: 100%; height: auto;">
+    <br>
+
+    <h3>Preprocessing</h3>
+    <p>
+      <code>cpp</code> expands <code>#include</code>, <code>#define</code>, and conditionals
+      into a single translation unit of pure C — no directives remain in the output.
+      Token pasting (<code>##</code>), stringification (<code>#</code>), and predefined macros
+      (<code>__FILE__</code>, <code>__LINE__</code>, <code>__COUNTER__</code>) are resolved here,
+      before any type-checking or code generation occurs.
     </p>
+
     <h3>Compilation</h3>
     <p>
-      <br>
-      The next step in compiling a C program is the <b>compilation phase</b>, where the preprocessed C code is
-      translated into assembly language. <br>
-      Compilers translate the code into assembly language, which is close to machine code but still human-readable.
-      Then, a dedicated assembler does the final conversion into machine code for the processor. This modularity makes
-      life easier for compiler developers.
-      <br><br>The compilation phase isn't just about translation; it’s also where heavy optimization takes place. Tools
-      like GCC allow you to control this with flags like <i>-O0</i> (no optimization) to <i>-O3</i> (maximum
-      optimization). Optimizations can affect the final assembly output, making your program faster and more efficient,
-      though at the cost of readability when you inspect the disassembled code.
-      <br>Another neat aspect of the assembly code generated during this phase is that it still preserves <b>symbolic
-      information</b>.
-      However, later on, when you deal with stripped binaries—where symbols are removed—you won’t have this luxury. In
-      such cases, disassembling the code becomes significantly harder!
-      <br>
-      <br>
+      GCC lowers the translation unit through its internal IR (GIMPLE → RTL) to architecture-specific assembly.
+      The optimization level is the critical variable for reverse engineering: <code>-O0</code> emits a nearly 1:1
+      mapping to the C source — every variable on the stack, every expression a separate instruction.
+      From <code>-O2</code> up, the compiler inlines aggressively, eliminates dead branches, unrolls loops,
+      and can merge or reorder functions entirely, breaking the structural correspondence you’d expect.
+      Symbolic labels are still present in the <code>.s</code> output regardless of level.
     </p>
+
     <h3>Assembly</h3>
-    <br>
-    <br>
+    <p>
+      <code>as</code> translates mnemonics to opcodes and produces a <b>relocatable ELF object</b> (<code>.o</code>).
+      External references have no resolved address yet — recorded as <b>relocation entries</b> in
+      <code>.rela.text</code> (RELA on x86-64: offset + type + symbol + addend),
+      pointing the linker at every site that needs patching.
+      <code>file</code> will report the output as <i>ELF 64-bit LSB relocatable</i>;
+      a shared library built with <code>-fPIC -shared</code> comes out as <i>shared object</i> —
+      position-independent, no fixed load address.
+    </p>
+    <p>
+      Key sections in a <code>.o</code>:<br>
+      <code>.text</code> — executable code.<br>
+      <code>.data</code> — initialized globals (present in file, mapped RW).<br>
+      <code>.bss</code> — zero-initialized globals (no space in file, kernel zero-fills on load).<br>
+      <code>.rodata</code> — string literals and const arrays (mapped RO); inspect with <code>objdump -sj .rodata</code>.<br>
+      <code>.symtab</code> / <code>.strtab</code> — full symbol table, stripped in release builds.<br>
+      <code>.dynsym</code> — export/import table for the dynamic linker; survives <code>strip --strip-all</code>.
+    </p>
+
     <h3>Linking</h3>
+    <p>
+      <code>ld</code> (invoked by <code>gcc</code>) consumes all <code>.o</code> files and library inputs,
+      resolves every relocation entry, assigns final virtual addresses, and emits the executable ELF.
+    </p>
+    <p>
+      <b>Static linking</b> (<code>-static</code>): merges all <code>.text</code>/<code>.data</code>/etc.
+      sections from <code>.o</code> files and <code>.a</code> archives, resolves all relocations to absolute
+      addresses. Fully self-contained — no <code>PT_INTERP</code>, no PLT indirection, calls are direct.
+      Larger binary (carries full libc), but no runtime dependency surprises; preferred for forensics and sandboxed
+      environments.
+    </p>
+    <p>
+      <b>Dynamic linking</b> (default): external symbols stay <code>UNDEF</code> in <code>.dynsym</code>.
+      A <code>PT_INTERP</code> segment names the runtime dynamic linker
+      (<code>/lib64/ld-linux-x86-64.so.2</code>), which maps the needed <code>.so</code>s and resolves symbols
+      at load time — or lazily on first call via <b>PLT/GOT</b>: each external call goes through a PLT stub
+      that on first invocation falls through to the resolver, patches the GOT entry with the real address,
+      and subsequent calls jump through the GOT directly.
+    </p>
+    <p>
+      <b>LTO</b> (<code>-flto</code>): defers optimization to link time. GCC stores GIMPLE IR in object files
+      instead of machine code; <code>ld</code> then runs a second optimization pass across all translation units
+      simultaneously, enabling cross-TU inlining and dead function elimination. From a RE perspective,
+      LTO-built binaries have no function-level correspondence to source files, and aggressively inlined code
+      makes CFG reconstruction significantly harder.
+    </p>
+
+    <div class="terminal-box">
+      <div class="terminal-header">
+        <span class="t-dot r"></span><span class="t-dot y"></span><span class="t-dot g"></span>
+        <span class="terminal-label">linking / runtime</span>
+      </div>
+      <pre><code class="language-bash">ldd ./binary                          # runtime shared lib dependencies
+readelf -d ./binary | grep NEEDED     # required .so from ELF dynamic section
+readelf -W --syms ./binary | grep UNDEF  # symbols resolved at runtime by ld.so
+objdump -M intel -d ./binary          # disassemble: external calls appear as plt@FUNC
+strip --strip-all ./binary            # remove .symtab/.strtab  (keeps .dynsym)</code></pre>
+    </div>
+
+    <p>
+      After <code>strip --strip-all</code>, function names and local symbols are gone — only the exports and
+      imports the dynamic linker depends on remain. CFG recovery falls back to heuristics:
+      function prologue patterns, cross-reference analysis, and section boundary detection.
+    </p>
+
+    <h3>Debug info</h3>
+    <p>
+      <b>ELF + DWARF</b>: debug info is embedded directly in the binary as dedicated sections
+      (<code>.debug_info</code>, <code>.debug_line</code>, <code>.debug_abbrev</code>, …).
+      <code>strip --strip-debug</code> removes these without touching the symbol table;
+      <code>strip --strip-all</code> removes both. Shipped ELF binaries are typically fully stripped.
+    </p>
+    <p>
+      <b>PE + PDB</b>: Windows uses a <i>separate</i> PDB (Program Database) file linked to the binary
+      via a GUID stored in the <code>IMAGE_DEBUG_DIRECTORY</code>. The binary itself carries almost no
+      debug info — the PDB is rarely shipped with a product, making it effectively absent for most RE work
+      unless the symbol server (<code>symsrv</code>) has it indexed.
+    </p>
     <br>
     <h2><u>Exercises</u></h2>
     <br>
