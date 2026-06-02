@@ -284,7 +284,9 @@ strip --strip-all a.out -o a2.out        # → stripped copy</code></pre>
           Operations are scalar single-precision SSE: <code>movss</code> (move), <code>mulss</code> (multiply), <code>divss</code> (divide).
           At <code class="flag">-O0</code>, GCC spills every argument to the stack then reloads it — the four
           <code>movss</code> around <code>mulss</code> are pure overhead. From <code class="flag">-O1</code>+,
-          the compiler keeps values in registers and the entire function collapses to a single <code>mulss xmm0, xmm1</code> / <code>ret</code>.
+          the standalone symbol collapses to two instructions: <code>mulss xmm0, xmm1</code> / <code>ret</code> —
+          no frame pointer, no stack. At <code class="flag">-O3</code>, call sites in the same translation unit
+          are also inlined, so the standalone symbol may never be reached from <code>main</code> at all.
         </div>
 
         <div class="obs obs-blue">
@@ -294,6 +296,61 @@ strip --strip-all a.out -o a2.out        # → stripped copy</code></pre>
           with no other conversion as equivalent to <code>puts</code>, which appends the newline itself and avoids
           format-string parsing overhead. The final <code>printf("%f\n", c)</code> cannot be simplified and
           stays as <code>printf@plt</code>.
+        </div>
+
+        <div class="terminal-box">
+          <div class="terminal-header">
+            <span class="t-dot r"></span><span class="t-dot y"></span><span class="t-dot g"></span>
+            <span class="terminal-label">gcc -O3  —  what actually changes</span>
+          </div>
+          <pre><code class="language-x86asm">; multiply / divide: standalone stubs — 2 instructions, no frame, no spills
+0000000000001190 &lt;multiply&gt;:
+    1190:  f3 0f 59 c1   mulss  xmm0,xmm1
+    1194:  c3            ret
+
+00000000000011a0 &lt;divide&gt;:
+    11a0:  f3 0f 5e c1   divss  xmm0,xmm1
+    11a4:  c3            ret
+
+; show: tail call — the function body IS the jump to puts
+00000000000011b0 &lt;show&gt;:
+    11b0:  e9 7b fe ff ff   jmp   1030 &lt;puts@plt&gt;
+
+; main: multiply / divide / show all inlined — arithmetic constant-folded to a single value
+0000000000001050 &lt;main&gt;:
+    1050:  sub    rsp,0x8
+    1054:  lea    rdi,[rip+0xfa9]               ; "hello!"
+    105b:  call   1030 &lt;puts@plt&gt;               ; printf("hello!\n") → puts
+    1060:  lea    rdi,[rip+0xfa4]               ; "World"
+    1067:  call   1030 &lt;puts@plt&gt;               ; show("World") inlined → direct puts
+    106c:  movsd  xmm0,QWORD PTR [rip+0xfa4]   ; multiply(divide(4.0,2.0),5.0) = 10.0 precomputed
+    1074:  mov    eax,0x1                        ; 1 xmm arg for printf varargs
+    1079:  lea    rdi,[rip+0xf91]               ; "%f\n"
+    1080:  call   1040 &lt;printf@plt&gt;
+    1085:  xor    eax,eax                       ; return 0
+    1087:  add    rsp,0x8
+    108b:  ret</code></pre>
+        </div>
+
+        <div class="obs obs-amber">
+          <b>Constant folding — the entire arithmetic chain disappears</b><br>
+          <code>multiply(divide(4.0, 2.0), 5.0)</code> is fully evaluated at compile time:
+          <code>4.0 / 2.0 = 2.0</code>, then <code>2.0 * 5.0 = 10.0</code>.
+          The result is stored in <code class="sect">.rodata</code> as a <code>double</code> constant
+          (single-precision result promoted to double for <code>printf</code>'s <code>%f</code> vararg convention).
+          Neither <code>divide</code> nor <code>multiply</code> is called from <code>main</code> —
+          their call sites ceased to exist. For RE: an arithmetic chain on literal constants
+          leaves no trace in the optimized binary beyond the final precomputed value.
+        </div>
+
+        <div class="obs obs-teal">
+          <b>Tail call optimization — show becomes a jump</b><br>
+          <code>show</code>'s only action is to call <code>puts</code> and return its result.
+          Since no work happens after that call, GCC replaces <code>call puts / ret</code> with
+          <code>jmp puts@plt</code>: <code>puts</code> returns directly to <code>show</code>'s caller,
+          skipping the intermediate frame entirely. At the inline call site in <code>main</code>,
+          <code>show("World")</code> becomes a direct <code>puts("World")</code> — the standalone symbol
+          survives only for external callers from other translation units.
         </div>
 
         <div class="terminal-box">
