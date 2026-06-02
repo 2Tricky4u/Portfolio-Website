@@ -615,8 +615,34 @@ h3 {
   color: var(--red-lust);
 }
 
+/* ── observation callout boxes ─────────────────────────────────── */
+.obs {
+  padding: 9px 14px;
+  margin: 10px 0;
+  border-radius: 0 4px 4px 0;
+  font-weight: normal;
+  font-size: 0.91em;
+  line-height: 1.65;
+}
+.obs-blue  { border-left: 3px solid #61afef; background: rgba(97, 175, 239, 0.07);  }
+.obs-teal  { border-left: 3px solid #4ec9b0; background: rgba(78, 201, 176, 0.07);  }
+.obs-amber { border-left: 3px solid #dcdcaa; background: rgba(220, 220, 170, 0.07); }
+.obs-red   { border-left: 3px solid #e06c75; background: rgba(224, 108, 117, 0.07); }
+
+/* solution sub-section divider */
+.sol-label {
+  display: block;
+  color: var(--grey-original);
+  font-size: 0.78em;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  margin: 20px 0 10px;
+  border-bottom: 1px solid #252525;
+  padding-bottom: 5px;
+}
+
 /* ── inline code readability ───────────────────────────────────── */
-p code, li code, dd code {
+p code, li code, dd code, .obs code, .consign code {
   background: rgba(255, 255, 255, 0.07);
   border-radius: 3px;
   padding: 1px 5px;
