@@ -372,10 +372,119 @@ strip --strip-all a.out -o a2.out        # → stripped copy</code></pre>
       </li>
       <br>
       <li><strong><b>Sections</b></strong>
-        <p class="consign">As you've seen, ELF binaries (and other types of binaries) are divided into sections. Some sections contain
-          code, and others contain data. Why do you think the distinction between code and data sections exists? How do
-          you think the loading process differs for code and data sections? Is it necessary to copy all sections into
-          memory when a binary is loaded for execution?</p>
+        <p class="consign">As you've seen, ELF binaries (and other types of binaries) are divided into sections.
+          Some sections contain code, and others contain data. Why do you think the distinction between code and data
+          sections exists? How do you think the loading process differs for code and data sections? Is it necessary
+          to copy all sections into memory when a binary is loaded for execution?</p>
+
+        <span class="sol-label">why the distinction exists</span>
+
+        <p>The core reason is <b>memory protection</b>. The CPU's MMU enforces per-page permission bits set by
+        the OS: code pages are mapped <b>R-X</b> (read + execute, not writable), data pages <b>RW-</b>
+        (read + write, not executable). Separating them into distinct sections lets the linker group them
+        into ELF <b>segments</b> with matching permissions, which the loader then passes to <code>mmap()</code>.</p>
+
+        <div class="obs obs-amber">
+          <b>W^X — write XOR execute</b><br>
+          A page that is both writable and executable is a classic exploitation primitive: inject shellcode into
+          a writable buffer, then jump to it. The hardware NX bit (AMD) / XD bit (Intel) enforces that executable
+          pages cannot be written and vice versa. This is why <code class="sect">.text</code> is R-X and
+          <code class="sect">.data</code> / <code class="sect">.bss</code> are RW- — mixing them into a single
+          region would force the OS to grant both permissions to every page in it.
+        </div>
+
+        <div class="obs obs-blue">
+          <b>Shared read-only code pages</b><br>
+          Because <code class="sect">.text</code> is read-only, the OS can back all processes that use the same
+          shared library with the <i>same physical pages</i>. Every process running against <code>libc.so</code>
+          maps its <code class="sect">.text</code> to the same physical frames — no duplication.
+          <code class="sect">.data</code> is per-process: it starts as a shared COW mapping and gets a private
+          copy the first time any page is written.
+        </div>
+
+        <span class="sol-label">how loading differs — code vs data</span>
+
+        <p>The kernel ELF loader (<code>load_elf_binary</code>) and <code>ld.so</code> work with
+        <b>segments</b> (program header entries), not sections. Each <code>PT_LOAD</code> segment groups
+        sections of the same permission class and is mapped with a single <code>mmap()</code> call:</p>
+
+        <div class="terminal-box">
+          <div class="terminal-header">
+            <span class="t-dot r"></span><span class="t-dot y"></span><span class="t-dot g"></span>
+            <span class="terminal-label">readelf -l a.out  —  PT_LOAD segments</span>
+          </div>
+          <pre><code class="language-bash">Type    Offset   VirtAddr           FileSiz  MemSiz   Flg
+LOAD    0x001000 0x0000000000001000  0x000249 0x000249 R E   # code:  r-x
+LOAD    0x002db0 0x0000000000003db0  0x000270 0x000278 RW    # data:  rw-
+#                                    ^FileSiz  ^MemSiz
+#                                                      ^^^^^ .bss adds to MemSiz but not FileSiz</code></pre>
+        </div>
+
+        <div class="obs obs-teal">
+          <b>Demand paging — nothing is copied upfront</b><br>
+          Neither segment is physically loaded at <code>mmap()</code> time. The kernel establishes the virtual
+          mapping and returns immediately. Pages are brought in from disk only on the first access that triggers
+          a page fault — the fault handler reads the page from the file (or allocates a zero page for
+          <code class="sect">.bss</code>) and resumes the faulting instruction transparently.
+          A short-lived process that never touches a large <code class="sect">.rodata</code> table never pays
+          the I/O cost for it.
+        </div>
+
+        <div class="obs obs-red">
+          <b>.bss — SHT_NOBITS, zero cost in file</b><br>
+          <code class="sect">.bss</code> has section type <code>SHT_NOBITS</code>: it occupies zero bytes in
+          the file but contributes to the segment's <code>MemSiz</code>. The loader calls
+          <code>mmap(MAP_ANONYMOUS)</code> for the extra pages and the kernel zero-fills them (guaranteed by
+          POSIX). This is why global <code>int arr[1000000]</code> costs nothing in binary size — it is pure
+          address-space reservation, paid only in RAM if accessed.
+        </div>
+
+        <span class="sol-label">is it necessary to load all sections?</span>
+
+        <p>No — and the sections/segments split is precisely what makes this possible.
+        <b>Sections</b> are the linker/debugger view of the file. <b>Segments</b> are the runtime view.
+        Only sections that fall inside a <code>PT_LOAD</code> segment are ever mapped; everything else
+        exists only on disk:</p>
+
+        <div class="terminal-box">
+          <div class="terminal-header">
+            <span class="t-dot r"></span><span class="t-dot y"></span><span class="t-dot g"></span>
+            <span class="terminal-label">readelf -l a.out  —  section-to-segment mapping</span>
+          </div>
+          <pre><code class="language-bash">Section to Segment mapping:
+  Segment  Sections
+  ...
+  03       .init .plt .text .fini                           # r-x  → loaded
+  04       .rodata .eh_frame_hdr .eh_frame                  # r    → loaded
+  05       .data .bss .got .dynamic .init_array .fini_array # rw-  → loaded
+  ...
+  # NOT listed in any segment → never mapped:
+  #   .symtab   .strtab   (stripped anyway in release)
+  #   .debug_info   .debug_line   .debug_abbrev   .debug_str   (DWARF)</code></pre>
+        </div>
+
+        <div class="obs obs-teal">
+          <b>What never reaches RAM</b><br>
+          <code class="sect">.symtab</code> / <code class="sect">.strtab</code> (full symbol table) and all
+          <code class="sect">.debug_*</code> DWARF sections are not part of any <code>PT_LOAD</code> segment —
+          the runtime linker never touches them. Stripping removes them from the file entirely, but even
+          in an unstripped binary they sit on disk without consuming RAM.
+          <code class="sect">.dynsym</code> and <code class="sect">.dynstr</code> on the other hand are inside
+          a <code>PT_LOAD</code> segment and must be present at runtime for <code>ld.so</code> to resolve symbols.
+          The distinction: what the linker needs vs what the dynamic loader needs.
+        </div>
+
+        <div class="terminal-box">
+          <div class="terminal-header">
+            <span class="t-dot r"></span><span class="t-dot y"></span><span class="t-dot g"></span>
+            <span class="terminal-label">verify at runtime — /proc maps</span>
+          </div>
+          <pre><code class="language-bash">cat /proc/$(pidof binary)/maps
+# 555555555000-555555556000 r-xp  ...  a.out   ← .text mapped r-x
+# 555555557000-555555558000 r--p  ...  a.out   ← .rodata mapped r
+# 555555558000-555555559000 rw-p  ...  a.out   ← .data/.bss mapped rw
+# 7ffff7d00000-7ffff7f28000 r-xp  ...  libc.so ← shared code pages (same physical frames across all processes)</code></pre>
+        </div>
       </li>
     </ol>
 
