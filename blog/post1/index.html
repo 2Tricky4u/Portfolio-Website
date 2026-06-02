@@ -186,7 +186,7 @@ strip --strip-all ./binary            # remove .symtab/.strtab  (keeps .dynsym)<
     <br>
     <ol>
       <li><strong><b>Locating Functions</b></strong>
-        <p>Write a C program that contains several functions and compile it into an assembly file, an object file, and
+        <p class="consign">Write a C program that contains several functions and compile it into an assembly file, an object file, and
           an executable binary, respectively. Try to locate the functions you wrote in the assembly file and in the
           disassembled object file and executable. Can you see the correspondence between the C code and the assembly
           code? Finally, strip the executable and try to identify the functions again.</p>
@@ -211,7 +211,7 @@ int main(void) {
       </li>
       <br>
       <li><strong><b>Sections</b></strong>
-        <p>As you've seen, ELF binaries (and other types of binaries) are divided into sections. Some sections contain
+        <p class="consign">As you've seen, ELF binaries (and other types of binaries) are divided into sections. Some sections contain
           code, and others contain data. Why do you think the distinction between code and data sections exists? How do
           you think the loading process differs for code and data sections? Is it necessary to copy all sections into
           memory when a binary is loaded for execution?</p>
