@@ -615,6 +615,18 @@ h3 {
   color: var(--red-lust);
 }
 
+.consign {
+  border-left: 3px solid var(--red-lust);
+  background: var(--black-grey);
+  border-radius: 0 5px 5px 0;
+  padding: 10px 16px;
+  margin: 10px 0 16px 0;
+  color: var(--grey-original);
+  font-style: italic;
+  font-weight: normal;
+  line-height: 1.7;
+}
+
 p {
   margin: 15px 0 20px 0;
   padding-left: 5px;
