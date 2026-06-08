@@ -189,6 +189,141 @@ strip --strip-all ./binary            # remove .symtab/.strtab  (keeps .dynsym)<
       the PDB is rarely shipped, making it absent for most RE work unless indexed by a symbol server (<code>symsrv</code>).
     </p>
     <br>
+    <h3>ELF loading</h3>
+    <p>
+      Linking produces a file on disk. Loading turns it into a live process — a choreography across three actors:
+      the <b>kernel</b> (parses ELF, creates the initial address space), the <b>dynamic linker</b>
+      (<code>ld.so</code> — <code>/lib64/ld-linux-x86-64.so.2</code>, a position-independent shared library
+      that bootstraps the runtime before any user code runs), and <b>libc</b> — the standard C library
+      (<code>libc.so.6</code>) providing <code>malloc</code>, <code>printf</code>, <code>exit</code>, and the
+      startup/shutdown scaffolding every C program depends on.
+    </p>
+    <p>
+      <b>fork + execve —</b> The shell calls <code>fork()</code> to clone itself, then
+      <code>execve(path, argv, envp)</code> in the child. The kernel's <code>do_execve</code> handler
+      tears down the existing address space and begins constructing a new one from the binary on disk.
+    </p>
+    <p>
+      <b>Kernel reads ELF header —</b> The 64-byte ELF header supplies everything needed:
+      magic bytes (<code>\x7fELF</code>), <code>e_type</code> (<code>ET_EXEC</code> for a fixed-address
+      executable, <code>ET_DYN</code> for a PIE), <code>e_machine</code> (<code>EM_X86_64</code>),
+      and <code>e_phoff</code> — the file offset to the program header table listing all <code>PT_*</code> entries.
+    </p>
+    <p>
+      <b>Kernel maps PT_LOAD segments —</b> For each <code>PT_LOAD</code> entry the kernel issues an
+      <code>mmap()</code>: the file range is mapped at the specified virtual address with permissions matching
+      the segment flags (R-X for code, RW- for data). Demand-paged — no physical I/O until first access
+      triggers a page fault.
+    </p>
+    <p>
+      <b>Kernel maps ld.so from PT_INTERP —</b> If a <code>PT_INTERP</code> segment is present (every
+      dynamically linked binary has one), the kernel reads the interpreter path it contains
+      (<code>/lib64/ld-linux-x86-64.so.2</code>), opens that file, and maps its own <code>PT_LOAD</code>
+      segments at a fresh ASLR base address. <code>ld.so</code> is itself a PIE — it runs fully
+      position-independent and must <i>self-relocate</i> before it can call any of its own functions.
+    </p>
+    <p>
+      <b>Kernel prepares the initial stack —</b> Before handing over control, the kernel writes the
+      initial stack frame: <code>argc</code>, <code>argv[]</code> and <code>envp[]</code> pointer arrays
+      (each null-terminated), then the <b>auxiliary vector</b> — a sequence of <code>AT_*</code>
+      key-value pairs that pass kernel-internal state to userspace without a syscall:
+    </p>
+    <dl class="sect-list">
+      <dt><code>AT_PHDR</code> / <code>AT_PHNUM</code></dt>
+      <dd>address and count of the main executable's program headers — lets <code>ld.so</code> locate <code>PT_DYNAMIC</code></dd>
+      <dt><code>AT_ENTRY</code></dt>
+      <dd>the main executable's entry point (<code>_start</code>) — where <code>ld.so</code> will jump at the very end</dd>
+      <dt><code>AT_BASE</code></dt>
+      <dd><code>ld.so</code>'s own load base — needed for its self-relocation pass</dd>
+      <dt><code>AT_RANDOM</code></dt>
+      <dd>16 kernel-generated random bytes — seeds the stack canary and glibc's ASLR offsets</dd>
+    </dl>
+
+    <div class="terminal-box">
+      <div class="terminal-header">
+        <span class="t-dot r"></span><span class="t-dot y"></span><span class="t-dot g"></span>
+        <span class="terminal-label">auxiliary vector — kernel → userspace channel</span>
+      </div>
+      <pre><code class="language-bash">LD_SHOW_AUXV=1 ./a.out 2>/dev/null | grep -E "AT_PHDR|AT_PHNUM|AT_ENTRY|AT_BASE|AT_RANDOM|AT_PAGESZ|AT_INTERP"
+
+AT_PAGESZ:   4096                  # memory page size (arch constant, no syscall needed)
+AT_PHDR:     0x555555554040        # main executable program header table
+AT_PHNUM:    13                    # number of PT_* entries in that table
+AT_BASE:     0x7ffff7fc5000        # ld.so load base (ASLR randomised each exec)
+AT_ENTRY:    0x555555555050        # _start — ld.so jumps here after relocation
+AT_RANDOM:   0x7fffffffde39        # 16 random bytes (stack canary seed)</code></pre>
+    </div>
+
+    <div class="obs obs-red">
+      <b>ld.so bootstraps without libc</b><br>
+      When the kernel jumps to <code>ld.so</code>'s entry, the process has no heap, no libc, no C runtime.
+      <code>ld.so</code> locates itself via <code>AT_BASE</code>, applies its own relocations by walking its
+      own GOT/PLT tables with hand-written assembly stubs, then only after that self-relocation pass can it
+      call its own C functions. Everything needed to load libc is written to avoid depending on libc.
+    </div>
+
+    <p>
+      <b>Dynamic linker maps shared libraries —</b> <code>ld.so</code> reads the main executable's
+      <code>PT_DYNAMIC</code> segment and walks its <code>DT_NEEDED</code> entries — each names a required
+      shared object (<code>libc.so.6</code>, <code>libm.so.6</code>, …). It resolves paths through
+      <code>DT_RUNPATH</code>, <code>LD_LIBRARY_PATH</code>, and <code>/etc/ld.so.cache</code>, then
+      maps each library's <code>PT_LOAD</code> segments at ASLR-randomised addresses. The process is
+      recursive — each newly loaded library may declare its own <code>DT_NEEDED</code> entries.
+    </p>
+    <p>
+      <b>Dynamic linker applies relocations —</b> With all libraries resident, <code>ld.so</code>
+      processes the relocation tables (<code class="sect">.rela.dyn</code> / <code class="sect">.rela.plt</code>):
+      for each entry, the target symbol is resolved across all loaded objects' <code class="sect">.dynsym</code>
+      tables and the result is written into the target slot — GOT entries, absolute pointers in
+      <code class="sect">.data</code>. After this pass, all eagerly-bound symbols are fully resolved;
+      PLT entries are primed for lazy resolution on first call.
+    </p>
+    <p>
+      <b>Constructors — .init_array —</b> <code>ld.so</code> calls functions listed in
+      <code class="sect">.init_array</code> in dependency order: library constructors first
+      (TLS setup, libc internal init), then the executable's own. C functions annotated
+      <code>__attribute__((constructor))</code> land here — they run before <code>main</code>
+      with no explicit call in the source.
+    </p>
+    <p>
+      <b>Dynamic linker jumps to _start —</b> <code>ld.so</code> reads <code>AT_ENTRY</code> from the
+      auxiliary vector and transfers control to the main executable's entry point. This is <code>_start</code>,
+      injected by the GCC linker script from <code>crt1.o</code> — it never appears in the C source.
+    </p>
+    <p>
+      <b>_start → __libc_start_main —</b> <code>_start</code> zeroes <code>rbp</code> (marking the
+      outermost stack frame for unwinders), extracts <code>argc</code>, <code>argv</code>, and
+      <code>envp</code> from the initial stack layout, and calls
+      <code>__libc_start_main(main, argc, argv, …)</code>. libc is already fully mapped and relocated —
+      the call goes through the GOT like any other external symbol.
+    </p>
+    <p>
+      <b>libc calls main —</b> <code>__libc_start_main</code> installs <code>atexit</code> handlers,
+      runs any remaining init callbacks, then calls <code>main(argc, argv, envp)</code>.
+      On return, <code>exit()</code> flushes stdio buffers, fires <code>atexit</code> callbacks,
+      and issues the <code>exit_group(status)</code> syscall — terminating every thread in the process.
+    </p>
+
+    <div class="obs obs-amber">
+      <b>ASLR and the PIE requirement</b><br>
+      Each field in the auxiliary vector carrying an address (<code>AT_PHDR</code>, <code>AT_BASE</code>,
+      <code>AT_ENTRY</code>) will differ between runs when ASLR is active. For this to work, the main
+      executable must be compiled as a PIE (<code class="flag">-fPIE -pie</code>, the GCC default since
+      ~2016) so the kernel can place it at a random base rather than a fixed <code>0x400000</code>.
+      A non-PIE executable has a hard-coded load address and opts out of ASLR for its own segments —
+      visible in <code>e_type: ET_EXEC</code> vs <code>ET_DYN</code>.
+    </div>
+
+    <div class="obs obs-blue">
+      <b>Sections vs segments — the loading summary</b><br>
+      The full twelve-step process touches only <code>PT_LOAD</code>, <code>PT_INTERP</code>,
+      <code>PT_DYNAMIC</code>, and <code>PT_PHDR</code> segments — never individual sections.
+      <code class="sect">.symtab</code>, <code class="sect">.strtab</code>, and
+      <code class="sect">.debug_*</code> are outside every <code>PT_LOAD</code> segment and are
+      never mapped into memory at runtime. From the loader's perspective they do not exist.
+    </div>
+
+    <br>
     <h2><u>Exercises</u></h2>
     <br>
     <ol>
