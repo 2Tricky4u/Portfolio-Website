@@ -9,8 +9,8 @@ const { label = 'terminal' } = Astro.props;
 <figure class="terminal-block">
   <figcaption class="terminal-header">
     <span class="t-dot r" aria-hidden="true"></span>
-    <span class="t-dot" aria-hidden="true"></span>
-    <span class="t-dot" aria-hidden="true"></span>
+    <span class="t-dot y" aria-hidden="true"></span>
+    <span class="t-dot g" aria-hidden="true"></span>
     <span class="terminal-label">{label}</span>
   </figcaption>
   <slot />
@@ -42,7 +42,15 @@ const { label = 'terminal' } = Astro.props;
   }
 
   .t-dot.r {
-    background: var(--red);
+    background: #ff5f56;
+  }
+
+  .t-dot.y {
+    background: #ffbd2e;
+  }
+
+  .t-dot.g {
+    background: #27c93f;
   }
 
   .terminal-label {
@@ -50,6 +58,8 @@ const { label = 'terminal' } = Astro.props;
     font-family: var(--font-mono);
     font-size: var(--text-xs);
     color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
 
   .terminal-block :global(pre) {

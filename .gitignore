@@ -9,3 +9,4 @@ dist
 dist/
 .astro/
 node_modules/
+_commitmsg.txt

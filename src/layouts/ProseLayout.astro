@@ -8,13 +8,22 @@ interface Props {
   meta?: string[];
   backHref?: string;
   backLabel?: string;
+  variant?: 'default' | 'writeup';
 }
 
-const { title, description, kicker, meta = [], backHref = '/', backLabel = 'home' } = Astro.props;
+const {
+  title,
+  description,
+  kicker,
+  meta = [],
+  backHref = '/',
+  backLabel = 'home',
+  variant = 'default',
+} = Astro.props;
 ---
 
 <BaseLayout title={title} description={description}>
-  <article class="section">
+  <article class:list={['section', { 'is-writeup': variant === 'writeup' }]}>
     <div class="prose-container">
       <p class="back mono">
         <a class="link" href={backHref}>&larr; {backLabel}</a>
@@ -139,12 +148,26 @@ const { title, description, kicker, meta = [], backHref = '/', backLabel = 'home
   }
 
   .prose :global(:not(pre) > code) {
-    background: var(--bg-2);
+    background: rgba(255, 255, 255, 0.07);
     border: 1px solid var(--border);
     border-radius: 4px;
-    padding: 0.1em 0.35em;
-    font-size: 0.875em;
-    color: var(--red-soft);
+    padding: 0.08em 0.4em;
+    font-size: 0.9em;
+    color: #e8e8e8;
+  }
+
+  /* Colour inline code by meaning (classes added by the rehype plugin). */
+  .prose :global(:not(pre) > code.sect) {
+    color: #4ec9b0;
+  }
+
+  .prose :global(:not(pre) > code.flag) {
+    color: #dcdcaa;
+  }
+
+  .prose :global(.link-type) {
+    color: #e63e4b;
+    font-style: normal;
   }
 
   .prose :global(blockquote) {
@@ -164,5 +187,30 @@ const { title, description, kicker, meta = [], backHref = '/', backLabel = 'home
   .prose :global(td) {
     border: 1px solid var(--border);
     padding: 0.4rem 0.8rem;
+  }
+
+  /* Writeups read like a blog post: roomier column, larger body & code. */
+  .is-writeup .prose-container {
+    max-width: 46rem;
+  }
+
+  .is-writeup .prose {
+    font-size: 1.05rem;
+    line-height: 1.75;
+  }
+
+  .is-writeup .prose :global(p),
+  .is-writeup .prose :global(li) {
+    font-size: 1.05rem;
+    line-height: 1.75;
+  }
+
+  .is-writeup .prose :global(pre) {
+    font-size: 0.92rem;
+    line-height: 1.7;
+  }
+
+  .is-writeup .prose :global(:not(pre) > code) {
+    font-size: 0.92em;
   }
 </style>

@@ -72,11 +72,11 @@ Key sections in a `.o`:
 
 `ld` (invoked by `gcc`) consumes all `.o` files and library inputs, resolves every relocation entry, assigns final virtual addresses, and emits the executable ELF.
 
-**Static** (`-static`) — merges all `.text` / `.data` / … sections from `.o` files and `.a` archives, resolves all relocations to absolute addresses. Fully self-contained — no `PT_INTERP`, no PLT indirection, direct calls. Larger binary (carries full libc), but no runtime dependency surprises; preferred for forensics and sandboxed environments.
+<span class="link-type">Static</span> (`-static`) — merges all `.text` / `.data` / … sections from `.o` files and `.a` archives, resolves all relocations to absolute addresses. Fully self-contained — no `PT_INTERP`, no PLT indirection, direct calls. Larger binary (carries full libc), but no runtime dependency surprises; preferred for forensics and sandboxed environments.
 
-**Dynamic** (default) — external symbols stay `UNDEF` in `.dynsym`. A `PT_INTERP` segment names the runtime linker (`/lib64/ld-linux-x86-64.so.2`), which maps the needed `.so`s and resolves symbols at load time — or lazily on first call via **PLT/GOT**: each external call goes through a PLT stub that on first invocation falls through to the resolver, patches the GOT entry with the real address; subsequent calls jump through the GOT directly.
+<span class="link-type">Dynamic</span> (default) — external symbols stay `UNDEF` in `.dynsym`. A `PT_INTERP` segment names the runtime linker (`/lib64/ld-linux-x86-64.so.2`), which maps the needed `.so`s and resolves symbols at load time — or lazily on first call via **PLT/GOT**: each external call goes through a PLT stub that on first invocation falls through to the resolver, patches the GOT entry with the real address; subsequent calls jump through the GOT directly.
 
-**LTO** (`-flto`) — defers optimization to link time. GCC stores GIMPLE IR in object files instead of machine code; `ld` then runs a second optimization pass across all translation units simultaneously, enabling cross-TU inlining and dead function elimination. From a RE perspective, LTO-built binaries have no function-level correspondence to source files, and aggressively inlined code makes CFG reconstruction significantly harder.
+<span class="link-type">LTO</span> (`-flto`) — defers optimization to link time. GCC stores GIMPLE IR in object files instead of machine code; `ld` then runs a second optimization pass across all translation units simultaneously, enabling cross-TU inlining and dead function elimination. From a RE perspective, LTO-built binaries have no function-level correspondence to source files, and aggressively inlined code makes CFG reconstruction significantly harder.
 
 <TerminalBlock label="linking / runtime">
 ```bash

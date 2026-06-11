@@ -11,14 +11,13 @@ import booth from '../assets/booth.png';
     <h1>Xavier Ogay</h1>
     <p class="lede">
       I work where software meets the machine: binary analysis, systems security, and
-      offensive tooling. Currently finishing a joint MSc in Cyber Security at
+      offensive tooling. I hold a joint MSc in Cyber Security from
       <a class="link" href="https://www.epfl.ch" target="_blank" rel="noopener noreferrer">EPFL</a> /
-      <a class="link" href="https://ethz.ch" target="_blank" rel="noopener noreferrer">ETH Zürich</a>,
-      graduating June 2026.
+      <a class="link" href="https://ethz.ch" target="_blank" rel="noopener noreferrer">ETH Zürich</a>.
     </p>
     <p class="status mono">
       <span class="pulse" aria-hidden="true"></span>
-      status: open to roles from 07/2026
+      status: available now
     </p>
     <div class="cta-row">
       <a href="#projects" class="btn btn-primary">View projects</a>
@@ -122,8 +121,10 @@ import booth from '../assets/booth.png';
   .phone-zone {
     position: absolute;
     bottom: clamp(1.25rem, 4vh, 2.5rem);
-    right: clamp(1.25rem, 4vw, 2.75rem);
-    width: clamp(3.5rem, 7vw, 5rem);
+    /* Full-bleed offset: pin to the viewport's far-right edge with a tight
+       margin, outside the centered content column. */
+    right: calc(50% - 50vw + 1.5rem);
+    width: clamp(2.75rem, 4.5vw, 3.75rem);
     z-index: 5;
   }
 
@@ -185,9 +186,9 @@ import booth from '../assets/booth.png';
     }
 
     .phone-zone {
-      bottom: 0.75rem;
-      right: 0.75rem;
-      width: 3rem;
+      bottom: 0.5rem;
+      right: calc(50% - 50vw + 1rem);
+      width: 2.5rem;
     }
   }
 </style>
