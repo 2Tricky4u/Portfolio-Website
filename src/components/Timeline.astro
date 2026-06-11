@@ -1,11 +1,21 @@
 ---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
 import SectionHeading from './SectionHeading.astro';
+import epfl from '../assets/logos/epfl.png';
+import eth from '../assets/logos/eth.png';
+import piccard from '../assets/logos/piccard.png';
+import ec from '../assets/logos/ec.png';
+import bobst from '../assets/logos/bobst.png';
+import cgn from '../assets/logos/cgn.png';
+import army from '../assets/logos/army.png';
 
 interface Entry {
   period: string;
   title: string;
   place: string;
   details?: string[];
+  logos?: ImageMetadata[];
 }
 
 const experience: Entry[] = [
@@ -16,27 +26,32 @@ const experience: Entry[] = [
     details: [
       'Static analysis framework for memory safety of WASM smart contracts at the LLVM level.',
     ],
+    logos: [epfl],
   },
   {
     period: '2024 — 2025',
     title: 'Research project in cybersecurity — AutoMutate++',
     place: 'EPFL, Lausanne',
     details: ['Automated artifact mutation and differential testing against AV/EDR products.'],
+    logos: [epfl],
   },
   {
     period: 'Jun — Nov 2018',
     title: 'Mandatory military service (ER)',
     place: 'Swiss Army, ERPM 19-2, Sion',
+    logos: [army],
   },
   {
     period: 'Jun 2015',
     title: 'Internship — Computer Science',
     place: 'CGN, Lausanne',
+    logos: [cgn],
   },
   {
     period: 'Mar 2014',
     title: 'Internship — Electronic Engineering',
     place: 'BOBST SA, Mex',
+    logos: [bobst],
   },
 ];
 
@@ -48,22 +63,129 @@ const education: Entry[] = [
     details: [
       'Focus: software security, hardware security, system & network security, deep learning.',
     ],
+    logos: [epfl, eth],
   },
   {
     period: '2019 — 2023',
     title: 'BSc Computer Science',
     place: 'EPFL, Lausanne',
     details: ['Focus: machine learning, embedded systems, financial economics.'],
+    logos: [epfl],
   },
   {
     period: '2018 — 2019',
     title: 'Cambridge C1 Advanced (CAE)',
     place: 'EC School, Vancouver',
+    logos: [ec],
   },
   {
     period: '2016 — 2018',
     title: 'High School Maturity — Maths & Physics',
     place: 'Gymnase Auguste Piccard, Lausanne',
+    logos: [piccard],
+  },
+];
+
+interface Course {
+  name: string;
+  url: string;
+}
+
+const coursework: { category: string; courses: Course[] }[] = [
+  {
+    category: 'Mathematics',
+    courses: [
+      { name: 'Analyse 1', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=1705590&ww_x_anneeAcad=2020-2021&ww_i_section=249847' },
+      { name: 'Analyse 2', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=1705597&ww_x_anneeAcad=2020-2021&ww_i_section=249847' },
+      { name: 'Analyse 3', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=1772230&ww_x_anneeAcad=2021-2022&ww_i_section=249847' },
+      { name: 'Algebra', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=128313735&ww_x_anneeAcad=2022-2023&ww_i_section=249847' },
+      { name: 'Algèbre Linéaire', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=1772095&ww_x_anneeAcad=2020-2021&ww_i_section=249847' },
+      { name: 'Probability and Statistics', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=2133573916&ww_x_anneeAcad=2021-2022&ww_i_section=249847' },
+      { name: 'Physique Mécanique', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=2380897329&ww_x_anneeAcad=2020-2021&ww_i_section=249847' },
+      { name: 'General Physics: Electromagnetism', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=2380732419&ww_x_anneeAcad=2021-2022&ww_i_section=249847' },
+    ],
+  },
+  {
+    category: 'Information Technologies',
+    courses: [
+      { name: 'Advanced Information, Computation and Communication 1', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=2046270943&ww_x_anneeAcad=2020-2021&ww_i_section=249847' },
+      { name: 'Advanced Information, Computation and Communication 2', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=2046271051&ww_x_anneeAcad=2020-2021&ww_i_section=249847' },
+      { name: 'Algorithms', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=2258712&ww_x_anneeAcad=2021-2022&ww_i_section=249847' },
+      { name: 'Computer Networks', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=1776067&ww_x_anneeAcad=2021-2022&ww_i_section=249847' },
+      { name: 'Theory of Computation', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=1704192615&ww_x_anneeAcad=2021-2022&ww_i_section=249847' },
+      { name: 'Interaction personne-système', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=2700488321&ww_x_anneeAcad=2021-2022&ww_i_section=249847' },
+      { name: 'Parallelism and Concurrency', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=1887880865&ww_x_anneeAcad=2021-2022&ww_i_section=249847' },
+      { name: 'Computer Security', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=2380847807&ww_x_anneeAcad=2022-2023&ww_i_section=249847' },
+    ],
+  },
+  {
+    category: 'Programming',
+    courses: [
+      { name: 'Introduction à la programmation', url: 'https://edu.epfl.ch/studyplan/fr/propedeutique/informatique/coursebook/introduction-a-la-programmation-CS-107' },
+      { name: 'Pratique de la POO', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=1677965677&ww_x_anneeAcad=2020-2021&ww_i_section=249847' },
+      { name: 'Functional Programming', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=1790138595&ww_x_anneeAcad=2021-2022&ww_i_section=249847' },
+      { name: 'Introduction to Machine Learning', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=2380850291&ww_x_anneeAcad=2021-2022&ww_i_section=249847' },
+      { name: 'Projet programmation système', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=1888789713&ww_x_anneeAcad=2021-2022&ww_i_section=249847' },
+      { name: 'Programmation orientée système', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=71645784&ww_x_anneeAcad=2021-2022&ww_i_section=249847' },
+      { name: 'Introduction to Operating Systems', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=2046271680&ww_x_anneeAcad=2022-2023&ww_i_section=249847' },
+      { name: 'Software Engineering', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=348719454&ww_x_anneeAcad=2022-2023&ww_i_section=249847' },
+      { name: 'Software Development Project', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=838992628&ww_x_anneeAcad=2022-2023&ww_i_section=249847' },
+      { name: 'Introduction to Database Systems', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=348718726&ww_x_anneeAcad=2022-2023&ww_i_section=249847' },
+      { name: 'Introduction to Computer Graphics', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=1908423119&ww_x_anneeAcad=2022-2023&ww_i_section=1751774' },
+    ],
+  },
+  {
+    category: 'Hardware',
+    courses: [
+      { name: 'Digital System Design', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=2507040551&ww_x_anneeAcad=2020-2021&ww_i_section=249847' },
+      { name: 'Computer Architecture 1', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=2731049455&ww_x_anneeAcad=2021-2022&ww_i_section=249847' },
+      { name: 'Computer Architecture 2', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=2731049766&ww_x_anneeAcad=2021-2022&ww_i_section=249847' },
+      { name: 'Introduction to Multiprocessor Architecture', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=1921237690&ww_x_anneeAcad=2022-2023&ww_i_section=249847' },
+      { name: 'Systèmes embarqués microprogrammés', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=354337707&ww_x_anneeAcad=2022-2023&ww_i_section=943936' },
+    ],
+  },
+  {
+    category: 'Economics & Financial',
+    courses: [
+      { name: 'Relations Internationales', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=1580216372&ww_x_anneeAcad=2021-2022&ww_i_section=1751774' },
+      { name: 'Droit des affaires', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=1580217230&ww_x_anneeAcad=2021-2022&ww_i_section=1751774' },
+      { name: 'Foundation in Financial Economics', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=2724455058&ww_x_anneeAcad=2022-2023&ww_i_section=1751774' },
+      { name: "Finance d'entreprise", url: 'https://hecnet.unil.ch/hec/syllabus/descriptif/1953' },
+      { name: 'Project Management and Risk Analysis', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=353834062&ww_x_anneeAcad=2023-2024&ww_i_section=1630858908' },
+    ],
+  },
+  {
+    category: 'Computer Science (MA) — EPFL',
+    courses: [
+      { name: 'Applied Data Analysis', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=2046272383&ww_x_anneeAcad=2023-2024&ww_i_section=3138250313' },
+      { name: 'Advanced Computer Architecture', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=1772055&ww_x_anneeAcad=2023-2024&ww_i_section=2483907795' },
+      { name: 'Advanced Topics on Privacy Enhancing Technologies', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=2380862788&ww_x_anneeAcad=2023-2024&ww_i_section=2483907795' },
+      { name: 'Data Visualization', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=2217640779&ww_x_anneeAcad=2023-2024&ww_i_section=2483907795' },
+      { name: 'Deep Learning', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=2217766498&ww_x_anneeAcad=2023-2024&ww_i_section=2483907795' },
+      { name: 'Software Security', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=2473820019&ww_x_anneeAcad=2023-2024&ww_i_section=2483907795' },
+      { name: 'Systems for Data Management and Data Science', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=3211324182&ww_x_anneeAcad=2024-2025&ww_i_section=2483907795' },
+      { name: 'Research Project in Cyber Security', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=3526370406&ww_x_anneeAcad=2024-2025&ww_i_section=2483907795' },
+      { name: 'Homme/Machines', url: 'https://edu.epfl.ch/coursebook/fr/hommes-machines-i-HUM-416' },
+    ],
+  },
+  {
+    category: 'Computer Science (MA) — ETH Zürich',
+    courses: [
+      { name: 'Hardware Security', url: 'https://www.vvz.ethz.ch/Vorlesungsverzeichnis/lerneinheit.view?lerneinheitId=183587&semkez=2024W&lang=en' },
+      { name: 'Security of Wireless Networks', url: 'https://www.vvz.ethz.ch/Vorlesungsverzeichnis/lerneinheit.view?lerneinheitId=182585&semkez=2024W&lang=en' },
+      { name: 'System Security', url: 'https://www.vvz.ethz.ch/Vorlesungsverzeichnis/lerneinheit.view?lerneinheitId=183130&semkez=2024W&lang=en' },
+      { name: 'Big Data', url: 'https://www.vvz.ethz.ch/Vorlesungsverzeichnis/lerneinheit.view?lerneinheitId=182331&semkez=2024W&lang=en' },
+      { name: 'Network Security', url: 'https://www.vvz.ethz.ch/Vorlesungsverzeichnis/lerneinheit.view?lerneinheitId=183577&semkez=2024W&lang=en' },
+    ],
+  },
+  {
+    category: 'Neuroscience (MA)',
+    courses: [
+      { name: 'Introduction to Life Sciences (for IC)', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=1934610873&ww_x_anneeAcad=2022-2023&ww_i_section=249847' },
+      { name: 'Neuroscience: from molecular mechanisms to disease', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=2395755523&ww_x_anneeAcad=2023-2024&ww_i_section=3138250313' },
+      { name: 'Neuroscience: cellular and circuit mechanisms', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=2555928173&ww_x_anneeAcad=2023-2024&ww_i_section=3138250313' },
+      { name: 'Computational Neurosciences: biophysics', url: 'https://isa.epfl.ch/imoniteur_ISAP/!itffichecours.htm?ww_i_matiere=3123290358&ww_x_anneeAcad=2023-2024&ww_i_section=3138250313' },
+    ],
   },
 ];
 
@@ -99,7 +221,16 @@ const skills = [
               <li>
                 <p class="period mono">{e.period}</p>
                 <p class="entry-title">{e.title}</p>
-                <p class="place">{e.place}</p>
+                <div class="place-row">
+                  <p class="place">{e.place}</p>
+                  {e.logos && (
+                    <span class="logos">
+                      {e.logos.map((logo) => (
+                        <Image src={logo} alt="" height={26} class="logo" />
+                      ))}
+                    </span>
+                  )}
+                </div>
                 {e.details?.map((d) => <p class="detail">{d}</p>)}
               </li>
             ))
@@ -114,7 +245,16 @@ const skills = [
               <li>
                 <p class="period mono">{e.period}</p>
                 <p class="entry-title">{e.title}</p>
-                <p class="place">{e.place}</p>
+                <div class="place-row">
+                  <p class="place">{e.place}</p>
+                  {e.logos && (
+                    <span class="logos">
+                      {e.logos.map((logo) => (
+                        <Image src={logo} alt="" height={26} class="logo" />
+                      ))}
+                    </span>
+                  )}
+                </div>
                 {e.details?.map((d) => <p class="detail">{d}</p>)}
               </li>
             ))
@@ -122,15 +262,24 @@ const skills = [
         </ol>
         <details class="coursework">
           <summary class="mono">selected coursework</summary>
-          <p class="detail">
-            Software Security, System Security, Hardware Security, Network Security, Security of
-            Wireless Networks, Advanced Privacy Enhancing Technologies, Deep Learning, Advanced
-            Computer Architecture, Applied Data Analysis, Big Data, Operating Systems, Computer
-            Graphics, and more at
-            <a class="link" href="https://people.epfl.ch/xavier.ogay" target="_blank" rel="noopener noreferrer">
-              my EPFL profile</a
-            >.
-          </p>
+          <div class="course-grid">
+            {
+              coursework.map((group) => (
+                <div class="course-group">
+                  <p class="course-cat mono">{group.category}</p>
+                  <ul>
+                    {group.courses.map((c) => (
+                      <li>
+                        <a class="link" href={c.url} target="_blank" rel="noopener noreferrer">
+                          {c.name}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))
+            }
+          </div>
         </details>
       </div>
     </div>
@@ -191,9 +340,34 @@ const skills = [
     font-weight: 600;
   }
 
+  .place-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+  }
+
   .place {
     color: var(--text-muted);
     font-size: var(--text-sm);
+  }
+
+  .logos {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .logos :global(.logo) {
+    height: 22px;
+    width: auto;
+    border-radius: 3px;
+    filter: grayscale(1) opacity(0.7);
+    transition: filter 0.3s ease;
+  }
+
+  .timeline li:hover .logos :global(.logo) {
+    filter: grayscale(0) opacity(1);
   }
 
   .detail {
@@ -218,8 +392,31 @@ const skills = [
     color: var(--red);
   }
 
-  .coursework .detail {
-    margin-top: var(--space-3);
+  .course-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+    gap: var(--space-4);
+    margin-top: var(--space-4);
+  }
+
+  .course-cat {
+    color: var(--red-soft);
+    font-size: var(--text-xs);
+    margin-bottom: var(--space-2);
+  }
+
+  .course-group ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .course-group li {
+    font-size: var(--text-sm);
+    line-height: 1.4;
   }
 
   .skills {

@@ -22,7 +22,7 @@ const links = [
           <li>
             <a href={l.href}>
               <span class="idx">0{i + 1}.</span>
-              {l.label}
+              <span data-scramble data-text={l.label}>{l.label}</span>
             </a>
           </li>
         ))

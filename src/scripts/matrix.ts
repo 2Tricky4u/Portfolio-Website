@@ -1,14 +1,23 @@
-/* Matrix rain easter egg — lazily created canvases, toggled by the terminal's
-   hidden `hack` command. Escape or click turns it off. */
+/* Matrix rain easter egg — lazily created canvases. Triggered by the ringing
+   phone in the hero (with a random song) or the terminal's hidden `hack`
+   command. Escape or click turns it off. */
 
 const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const FONT_SIZE = 10;
+const SONGS = ['/audio/1.mp3', '/audio/2.mp3', '/audio/3.mp3'];
 
 let active = false;
 let canvasFront: HTMLCanvasElement | null = null;
 let canvasBack: HTMLCanvasElement | null = null;
 let startAudio: HTMLAudioElement | null = null;
 let stopAudio: HTMLAudioElement | null = null;
+let songAudio: HTMLAudioElement | null = null;
+let onStopCb: (() => void) | null = null;
+
+interface ToggleOptions {
+  song?: boolean;
+  onStop?: () => void;
+}
 
 interface Drop {
   x: number;
@@ -33,14 +42,15 @@ export function isMatrixActive(): boolean {
   return active;
 }
 
-export function toggleMatrix(): boolean {
+export function toggleMatrix(opts: ToggleOptions = {}): boolean {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
-  active ? stop() : start();
+  active ? stop() : start(opts);
   return active;
 }
 
-function start(): void {
+function start({ song = false, onStop }: ToggleOptions): void {
   active = true;
+  onStopCb = onStop ?? null;
   canvasBack = makeCanvas(998);
   canvasFront = makeCanvas(999);
   const ctx = canvasBack.getContext('2d')!;
@@ -50,7 +60,14 @@ function start(): void {
 
   startAudio ??= new Audio('/audio/ander.mp3');
   startAudio.volume = 0.6;
+  startAudio.currentTime = 0;
   startAudio.play().catch(() => {});
+
+  if (song) {
+    songAudio = new Audio(SONGS[Math.floor(Math.random() * SONGS.length)]);
+    songAudio.volume = 0.2;
+    songAudio.play().catch(() => {});
+  }
 
   const drops: Drop[] = [];
   for (let i = 0; i < cw / FONT_SIZE; i++) {
@@ -90,12 +107,22 @@ function stop(): void {
   canvasFront?.remove();
   canvasBack?.remove();
   canvasFront = canvasBack = null;
+
   startAudio?.pause();
   if (startAudio) startAudio.currentTime = 0;
+  if (songAudio) {
+    songAudio.pause();
+    songAudio = null;
+  }
   stopAudio ??= new Audio('/audio/bye.mp3');
+  stopAudio.currentTime = 0;
   stopAudio.play().catch(() => {});
+
   document.removeEventListener('keydown', onKey);
   document.removeEventListener('click', onClick);
+
+  onStopCb?.();
+  onStopCb = null;
 }
 
 function onKey(e: KeyboardEvent): void {

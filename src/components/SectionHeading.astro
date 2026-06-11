@@ -9,7 +9,7 @@ const { index, label, title } = Astro.props;
 ---
 
 <div class="section-heading" data-reveal>
-  <p class="kicker">{index}. {label}</p>
+  <p class="kicker"><span data-scramble data-text={`${index}. ${label}`}>{index}. {label}</span></p>
   <h2>{title}</h2>
 </div>
 
