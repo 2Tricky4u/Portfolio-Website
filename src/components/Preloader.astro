@@ -1,23 +1,28 @@
 ---
-/* Geeky red boot-sequence preloader. Shows once per session (sessionStorage),
-   reveals the site after ~1.3s. Runs even under reduced-motion (calmer). */
-const LOGO = `__  __  ___
-\\ \\/ / / _ \\
- >  < | (_) |
-/_/\\_\\ \\___/`;
+/* Cinematic geeky boot-sequence preloader. Once per session (sessionStorage),
+   reveals the site with a glitch. Runs under reduced-motion too (calmer). */
+const TITLE = 'XAVIER OGAY';
 ---
 
-{/* Runs immediately: skip the loader entirely on subsequent in-session navigations. */}
+{/* Runs immediately: skip entirely on subsequent in-session navigations. */}
 <script is:inline>
   if (sessionStorage.getItem('booted')) document.documentElement.classList.add('booted');
 </script>
 
 <div id="preloader" aria-hidden="true">
+  <div class="scanlines"></div>
   <div class="boot">
-    <pre class="boot-logo">{LOGO}</pre>
+    <div class="boot-cmd" id="boot-cmd"></div>
     <div class="boot-log" id="boot-log"></div>
-    <div class="boot-bar"><span id="boot-fill"></span></div>
-    <div class="boot-pct"><span id="boot-pct">0</span>%</div>
+    <div class="boot-title" id="boot-title" data-title={TITLE}></div>
+    <div class="boot-meta">
+      <div class="boot-bar"><span id="boot-fill"></span></div>
+      <div class="boot-row">
+        <span class="boot-label" id="boot-label">DECRYPTING</span>
+        <span class="boot-pct"><span id="boot-pct">0</span>%</span>
+      </div>
+    </div>
+    <div class="boot-status" id="boot-status"></div>
   </div>
 </div>
 
@@ -29,59 +34,78 @@ const LOGO = `__  __  ___
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--bg-0);
+    background:
+      radial-gradient(ellipse at center, rgba(236, 28, 36, 0.06), transparent 60%),
+      var(--bg-0);
     font-family: var(--font-mono);
-    transition: opacity 0.5s ease, visibility 0.5s ease;
-  }
-
-  #preloader.done {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
+    overflow: hidden;
+    transition: opacity 0.45s ease, visibility 0.45s ease;
   }
 
   :global(html.booted) #preloader {
     display: none;
   }
 
+  /* CRT scanlines + vignette */
+  .scanlines {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0) 0,
+      rgba(0, 0, 0, 0) 2px,
+      rgba(0, 0, 0, 0.28) 3px
+    );
+    mix-blend-mode: multiply;
+    box-shadow: inset 0 0 180px rgba(0, 0, 0, 0.9);
+  }
+
   .boot {
-    width: min(34rem, 86vw);
+    position: relative;
+    width: min(40rem, 88vw);
     padding: var(--space-4);
   }
 
-  .boot-logo {
-    margin: 0 0 var(--space-4);
+  .boot-cmd {
     color: var(--red);
-    font-size: clamp(0.8rem, 2.4vw, 1.1rem);
-    line-height: 1.1;
-    text-shadow: 0 0 18px rgba(236, 28, 36, 0.45);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-3);
+    min-height: 1.4em;
   }
 
   .boot-log {
-    min-height: 7.5em;
+    height: 8.4em;
+    overflow: hidden;
     font-size: var(--text-sm);
-    line-height: 1.6;
+    line-height: 1.55;
     color: var(--text-muted);
-    white-space: pre-wrap;
+    margin-bottom: var(--space-4);
   }
 
   .boot-log :global(.ok) {
     color: var(--green);
   }
-  .boot-log :global(.tag) {
-    color: var(--red);
+  .boot-log :global(.warn) {
+    color: #dcdcaa;
   }
-  .boot-log :global(.grant) {
-    color: var(--green);
-  }
-  .boot-log :global(.cursor) {
-    color: var(--red);
-    animation: blink 1s steps(1) infinite;
+
+  .boot-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.8rem, 7vw, 3.6rem);
+    letter-spacing: 0.12em;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: var(--space-4);
+    text-shadow:
+      0 0 18px rgba(236, 28, 36, 0.5),
+      2px 0 var(--red),
+      -2px 0 #4ec9b0;
   }
 
   .boot-bar {
-    margin-top: var(--space-4);
-    height: 3px;
+    height: 4px;
     background: var(--bg-2);
     border: 1px solid var(--border);
     border-radius: 2px;
@@ -92,32 +116,87 @@ const LOGO = `__  __  ___
     display: block;
     height: 100%;
     width: 0;
-    background: var(--red);
-    box-shadow: 0 0 10px var(--red);
+    background: linear-gradient(90deg, var(--red-soft), var(--red));
+    box-shadow: 0 0 12px var(--red);
   }
 
-  .boot-pct {
+  .boot-row {
+    display: flex;
+    justify-content: space-between;
     margin-top: var(--space-2);
     font-size: var(--text-xs);
     color: var(--text-faint);
-    text-align: right;
+    letter-spacing: 0.15em;
   }
 
-  @keyframes blink {
-    50% {
-      opacity: 0;
+  .boot-status {
+    margin-top: var(--space-4);
+    height: 1.5em;
+    font-size: var(--text-lg);
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    color: var(--green);
+    opacity: 0;
+  }
+
+  .boot-status.on {
+    opacity: 1;
+  }
+
+  /* Reveal-out glitch */
+  #preloader.done {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .scanlines {
+      animation: crt-flicker 5s steps(60) infinite;
+    }
+    .boot-title {
+      animation: title-glitch 2.4s steps(40) infinite;
+    }
+    #preloader.glitch-out {
+      animation: glitch-out 0.36s steps(2) forwards;
+    }
+    .boot-status.on {
+      animation: status-flash 0.5s steps(2) 2;
     }
   }
 
-  /* Safety net: if JS never runs, fade the overlay out anyway. */
-  @keyframes preloader-failsafe {
-    to {
-      opacity: 0;
-      visibility: hidden;
-    }
+  @keyframes crt-flicker {
+    0%, 97%, 100% { opacity: 1; }
+    98% { opacity: 0.82; }
+    99% { opacity: 0.94; }
   }
+
+  @keyframes title-glitch {
+    0%, 92%, 100% {
+      text-shadow: 0 0 18px rgba(236, 28, 36, 0.5), 2px 0 var(--red), -2px 0 #4ec9b0;
+      transform: translateX(0);
+    }
+    93% { transform: translateX(-2px); text-shadow: 3px 0 var(--red), -3px 0 #4ec9b0; }
+    95% { transform: translateX(2px); text-shadow: -3px 0 var(--red), 3px 0 #4ec9b0; }
+  }
+
+  @keyframes status-flash {
+    50% { opacity: 0.25; }
+  }
+
+  @keyframes glitch-out {
+    0% { clip-path: inset(0 0 0 0); transform: translateX(0); filter: none; }
+    30% { clip-path: inset(45% 0 40% 0); transform: translateX(-12px); filter: hue-rotate(-20deg); }
+    60% { clip-path: inset(10% 0 70% 0); transform: translateX(10px); }
+    100% { clip-path: inset(50% 0 50% 0); transform: translateX(0); opacity: 0; }
+  }
+
+  /* Failsafe: reveal the site even if the boot script never runs. */
   #preloader {
-    animation: preloader-failsafe 0.4s ease 3s forwards;
+    animation: preloader-failsafe 0.4s ease 3.5s forwards;
+  }
+  @keyframes preloader-failsafe {
+    to { opacity: 0; visibility: hidden; }
   }
 </style>
 
@@ -126,65 +205,107 @@ const LOGO = `__  __  ___
     const el = document.getElementById('preloader');
     if (!el || document.documentElement.classList.contains('booted')) return;
 
-    const log = document.getElementById('boot-log');
-    const fill = document.getElementById('boot-fill');
+    const cmdEl = document.getElementById('boot-cmd');
+    const logEl = document.getElementById('boot-log');
+    const titleEl = document.getElementById('boot-title');
+    const fillEl = document.getElementById('boot-fill');
     const pctEl = document.getElementById('boot-pct');
+    const labelEl = document.getElementById('boot-label');
+    const statusEl = document.getElementById('boot-status');
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const TITLE = (titleEl && titleEl.dataset.title) || 'XAVIER OGAY';
+    const GLYPHS = '!<>-_\\/[]{}=+*#%01ABCDEF$&';
+    const CMD = '> ./boot --user=xavier --mode=offensive';
+    const LOG = [
+      '<span class="ok">[ OK ]</span> reticulating splines',
+      '<span class="ok">[ OK ]</span> mounting /dev/brain',
+      '<span class="ok">[ OK ]</span> loading binary_analysis.ko',
+      '<span class="ok">[ OK ]</span> mapping PT_LOAD segments',
+      '<span class="warn">[ ** ]</span> bypassing EDR heuristics',
+      '<span class="ok">[ OK ]</span> spawning offensive_tooling',
+      '<span class="ok">[ OK ]</span> decrypting payload (aes-256-gcm)',
+      '<span class="ok">[ OK ]</span> verifying code signatures',
+    ];
 
     document.documentElement.style.overflow = 'hidden';
     sessionStorage.setItem('booted', '1');
 
-    const lines = [
-      'xavier@xavierogay.ch — xsh 5.0',
-      '<span class="tag">[  OK  ]</span> mounting /dev/brain',
-      '<span class="tag">[  OK  ]</span> loading binary_analysis.ko',
-      '<span class="tag">[  OK  ]</span> spawning offensive_tooling',
-      '<span class="tag">[  OK  ]</span> decrypting payload…',
-      '<span class="grant">&gt; access granted_</span>',
-    ];
+    const scramble = (p) => {
+      const lock = Math.floor(p * TITLE.length);
+      let out = '';
+      for (let i = 0; i < TITLE.length; i++) {
+        out += TITLE[i] === ' ' ? ' ' : i < lock ? TITLE[i] : GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+      }
+      if (titleEl) titleEl.textContent = out;
+    };
 
     const finish = () => {
+      if (titleEl) titleEl.textContent = TITLE;
+      if (fillEl) fillEl.style.width = '100%';
       if (pctEl) pctEl.textContent = '100';
-      if (fill) fill.style.width = '100%';
-      el.classList.add('done');
-      document.documentElement.style.overflow = '';
-      setTimeout(() => el.remove(), 600);
+      if (labelEl) labelEl.textContent = 'DECRYPTED';
+      if (statusEl) {
+        statusEl.textContent = '> ACCESS GRANTED';
+        statusEl.classList.add('on');
+      }
+      setTimeout(() => {
+        el.classList.add('glitch-out');
+        setTimeout(() => {
+          el.classList.add('done');
+          document.documentElement.style.overflow = '';
+          setTimeout(() => el.remove(), 500);
+        }, reduce ? 0 : 320);
+      }, 420);
     };
 
     if (reduce) {
-      // Calm path: show the final frame briefly, then reveal.
-      if (log) log.innerHTML = lines.join('\n');
-      if (fill) fill.style.width = '100%';
-      if (pctEl) pctEl.textContent = '100';
-      setTimeout(finish, 650);
+      if (cmdEl) cmdEl.textContent = CMD;
+      if (logEl) logEl.innerHTML = LOG.join('<br>');
+      scramble(1);
+      finish();
       return;
     }
 
-    const DURATION = 1300;
-    const start = performance.now();
-    let shown = 0;
-
-    const tick = (now) => {
-      const t = Math.min(1, (now - start) / DURATION);
-      const pct = Math.round(t * 100);
-      if (pctEl) pctEl.textContent = String(pct);
-      if (fill) fill.style.width = pct + '%';
-
-      const target = Math.floor(t * lines.length);
-      while (shown < target && shown < lines.length) {
-        if (log) log.innerHTML += (shown ? '\n' : '') + lines[shown];
-        shown++;
+    // Phase 1 — type the command.
+    let ci = 0;
+    const typer = setInterval(() => {
+      ci++;
+      if (cmdEl) cmdEl.textContent = CMD.slice(0, ci) + (ci % 2 ? '█' : ' ');
+      if (ci >= CMD.length) {
+        clearInterval(typer);
+        if (cmdEl) cmdEl.textContent = CMD;
+        runMain();
       }
-      if (t < 1) {
-        requestAnimationFrame(tick);
-      } else {
-        while (shown < lines.length) {
-          if (log) log.innerHTML += '\n' + lines[shown];
+    }, 16);
+
+    // Phase 2 — stream log + fill bar + resolve title.
+    const runMain = () => {
+      const DURATION = 1500;
+      const start = performance.now();
+      let shown = 0;
+      const step = (now) => {
+        const t = Math.min(1, (now - start) / DURATION);
+        const pct = Math.round(t * 100);
+        if (pctEl) pctEl.textContent = String(pct);
+        if (fillEl) fillEl.style.width = pct + '%';
+        scramble(t);
+        const target = Math.floor(t * LOG.length);
+        while (shown < target && shown < LOG.length) {
+          if (logEl) logEl.innerHTML += (shown ? '<br>' : '') + LOG[shown];
           shown++;
         }
-        setTimeout(finish, 220);
-      }
+        if (t < 1) {
+          requestAnimationFrame(step);
+        } else {
+          while (shown < LOG.length) {
+            if (logEl) logEl.innerHTML += '<br>' + LOG[shown];
+            shown++;
+          }
+          finish();
+        }
+      };
+      requestAnimationFrame(step);
     };
-    requestAnimationFrame(tick);
   })();
 </script>
