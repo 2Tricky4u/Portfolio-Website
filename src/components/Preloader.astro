@@ -1,0 +1,190 @@
+---
+/* Geeky red boot-sequence preloader. Shows once per session (sessionStorage),
+   reveals the site after ~1.3s. Runs even under reduced-motion (calmer). */
+const LOGO = `__  __  ___
+\\ \\/ / / _ \\
+ >  < | (_) |
+/_/\\_\\ \\___/`;
+---
+
+{/* Runs immediately: skip the loader entirely on subsequent in-session navigations. */}
+<script is:inline>
+  if (sessionStorage.getItem('booted')) document.documentElement.classList.add('booted');
+</script>
+
+<div id="preloader" aria-hidden="true">
+  <div class="boot">
+    <pre class="boot-logo">{LOGO}</pre>
+    <div class="boot-log" id="boot-log"></div>
+    <div class="boot-bar"><span id="boot-fill"></span></div>
+    <div class="boot-pct"><span id="boot-pct">0</span>%</div>
+  </div>
+</div>
+
+<style>
+  #preloader {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-0);
+    font-family: var(--font-mono);
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+  }
+
+  #preloader.done {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  :global(html.booted) #preloader {
+    display: none;
+  }
+
+  .boot {
+    width: min(34rem, 86vw);
+    padding: var(--space-4);
+  }
+
+  .boot-logo {
+    margin: 0 0 var(--space-4);
+    color: var(--red);
+    font-size: clamp(0.8rem, 2.4vw, 1.1rem);
+    line-height: 1.1;
+    text-shadow: 0 0 18px rgba(236, 28, 36, 0.45);
+  }
+
+  .boot-log {
+    min-height: 7.5em;
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    color: var(--text-muted);
+    white-space: pre-wrap;
+  }
+
+  .boot-log :global(.ok) {
+    color: var(--green);
+  }
+  .boot-log :global(.tag) {
+    color: var(--red);
+  }
+  .boot-log :global(.grant) {
+    color: var(--green);
+  }
+  .boot-log :global(.cursor) {
+    color: var(--red);
+    animation: blink 1s steps(1) infinite;
+  }
+
+  .boot-bar {
+    margin-top: var(--space-4);
+    height: 3px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .boot-bar span {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--red);
+    box-shadow: 0 0 10px var(--red);
+  }
+
+  .boot-pct {
+    margin-top: var(--space-2);
+    font-size: var(--text-xs);
+    color: var(--text-faint);
+    text-align: right;
+  }
+
+  @keyframes blink {
+    50% {
+      opacity: 0;
+    }
+  }
+
+  /* Safety net: if JS never runs, fade the overlay out anyway. */
+  @keyframes preloader-failsafe {
+    to {
+      opacity: 0;
+      visibility: hidden;
+    }
+  }
+  #preloader {
+    animation: preloader-failsafe 0.4s ease 3s forwards;
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    const el = document.getElementById('preloader');
+    if (!el || document.documentElement.classList.contains('booted')) return;
+
+    const log = document.getElementById('boot-log');
+    const fill = document.getElementById('boot-fill');
+    const pctEl = document.getElementById('boot-pct');
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    document.documentElement.style.overflow = 'hidden';
+    sessionStorage.setItem('booted', '1');
+
+    const lines = [
+      'xavier@xavierogay.ch — xsh 5.0',
+      '<span class="tag">[  OK  ]</span> mounting /dev/brain',
+      '<span class="tag">[  OK  ]</span> loading binary_analysis.ko',
+      '<span class="tag">[  OK  ]</span> spawning offensive_tooling',
+      '<span class="tag">[  OK  ]</span> decrypting payload…',
+      '<span class="grant">&gt; access granted_</span>',
+    ];
+
+    const finish = () => {
+      if (pctEl) pctEl.textContent = '100';
+      if (fill) fill.style.width = '100%';
+      el.classList.add('done');
+      document.documentElement.style.overflow = '';
+      setTimeout(() => el.remove(), 600);
+    };
+
+    if (reduce) {
+      // Calm path: show the final frame briefly, then reveal.
+      if (log) log.innerHTML = lines.join('\n');
+      if (fill) fill.style.width = '100%';
+      if (pctEl) pctEl.textContent = '100';
+      setTimeout(finish, 650);
+      return;
+    }
+
+    const DURATION = 1300;
+    const start = performance.now();
+    let shown = 0;
+
+    const tick = (now) => {
+      const t = Math.min(1, (now - start) / DURATION);
+      const pct = Math.round(t * 100);
+      if (pctEl) pctEl.textContent = String(pct);
+      if (fill) fill.style.width = pct + '%';
+
+      const target = Math.floor(t * lines.length);
+      while (shown < target && shown < lines.length) {
+        if (log) log.innerHTML += (shown ? '\n' : '') + lines[shown];
+        shown++;
+      }
+      if (t < 1) {
+        requestAnimationFrame(tick);
+      } else {
+        while (shown < lines.length) {
+          if (log) log.innerHTML += '\n' + lines[shown];
+          shown++;
+        }
+        setTimeout(finish, 220);
+      }
+    };
+    requestAnimationFrame(tick);
+  })();
+</script>

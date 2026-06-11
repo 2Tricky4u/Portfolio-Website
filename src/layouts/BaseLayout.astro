@@ -6,6 +6,8 @@ import '../styles/global.css';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import Terminal from '../components/easter/Terminal.astro';
+import Preloader from '../components/Preloader.astro';
+import BgAscii from '../components/BgAscii.astro';
 
 interface Props {
   title: string;
@@ -37,6 +39,8 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta name="generator" content={Astro.generator} />
   </head>
   <body>
+    <Preloader />
+    <BgAscii />
     <Nav />
     <main>
       <slot />

@@ -1,0 +1,93 @@
+---
+/* Super-faint ELF-hexdump watermark behind the whole site, with a gentle
+   scroll parallax. Decorative only (aria-hidden, pointer-events: none). */
+
+const HEX = '0123456789abcdef';
+const PRINTABLE = 'etaoinshrdlucmfwypvbgkqjxz./_-()[]{}<>=;:*&^%$#@!';
+
+// Deterministic PRNG so the markup is stable across builds (no hydration drift).
+let seed = 0x1337c0de;
+const rand = () => {
+  seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+  return seed / 0x7fffffff;
+};
+const pick = (s: string) => s[Math.floor(rand() * s.length)];
+
+const ROWS = 90;
+const BYTES = 16;
+const lines: string[] = [];
+for (let r = 0; r < ROWS; r++) {
+  const offset = (r * BYTES).toString(16).padStart(8, '0');
+  let hex = '';
+  let ascii = '';
+  for (let b = 0; b < BYTES; b++) {
+    const byte = `${pick(HEX)}${pick(HEX)}`;
+    hex += byte + (b % 2 ? ' ' : '');
+    ascii += rand() > 0.45 ? pick(PRINTABLE) : '.';
+  }
+  lines.push(`${offset}  ${hex} |${ascii}|`);
+}
+const dump = lines.join('\n');
+---
+
+<div class="bg-ascii" aria-hidden="true">
+  <pre>{dump}</pre>
+</div>
+
+<style>
+  .bg-ascii {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .bg-ascii pre {
+    position: absolute;
+    top: -10vh;
+    left: 50%;
+    width: max-content;
+    transform: translateX(-50%);
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    color: var(--red);
+    opacity: 0.045;
+    white-space: pre;
+    will-change: transform;
+  }
+
+  @media (max-width: 768px) {
+    .bg-ascii pre {
+      font-size: 0.6rem;
+      opacity: 0.05;
+    }
+  }
+</style>
+
+<script>
+  const pre = document.querySelector<HTMLElement>('.bg-ascii pre');
+  if (pre) {
+    let ticking = false;
+    const apply = () => {
+      // Gentle drift — slower than the page, so it parallaxes.
+      pre.style.transform = `translateX(-50%) translateY(${window.scrollY * 0.12}px)`;
+      ticking = false;
+    };
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (!ticking) {
+          ticking = true;
+          requestAnimationFrame(apply);
+        }
+      },
+      { passive: true }
+    );
+    apply();
+  }
+</script>
