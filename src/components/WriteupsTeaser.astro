@@ -1,0 +1,87 @@
+---
+import { getCollection } from 'astro:content';
+import SectionHeading from './SectionHeading.astro';
+
+const writeups = (await getCollection('writeups', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+  .slice(0, 3);
+---
+
+<section class="section alt">
+  <div class="container">
+    <SectionHeading index="04" label="notes & writeups" title="Writeups" />
+    <div class="grid">
+      {
+        writeups.map((w) => (
+          <a class="card" href={`/writeups/${w.id}`} data-reveal>
+            <p class="date mono">
+              {w.data.pubDate.toLocaleDateString('en-GB', {
+                year: 'numeric',
+                month: 'short',
+              })}
+            </p>
+            <h3>{w.data.title}</h3>
+            <p class="desc">{w.data.description}</p>
+            <span class="mono read">read &rarr;</span>
+          </a>
+        ))
+      }
+    </div>
+    <p class="all mono" data-reveal>
+      <a class="link" href="/writeups">all writeups &rarr;</a>
+    </p>
+  </div>
+</section>
+
+<style>
+  .alt {
+    background: var(--bg-1);
+    border-block: 1px solid var(--border);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 24rem));
+    gap: var(--space-4);
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    transition: border-color var(--transition-fast), transform var(--transition-fast);
+  }
+
+  .card:hover {
+    border-color: var(--red);
+    transform: translateY(-3px);
+  }
+
+  .date {
+    color: var(--text-faint);
+    font-size: var(--text-xs);
+  }
+
+  h3 {
+    font-size: var(--text-lg);
+  }
+
+  .desc {
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    flex: 1;
+  }
+
+  .read {
+    color: var(--red);
+    font-size: var(--text-sm);
+  }
+
+  .all {
+    margin-top: var(--space-5);
+  }
+</style>

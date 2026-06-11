@@ -1,0 +1,56 @@
+---
+import '@fontsource-variable/inter';
+import '@fontsource-variable/space-grotesk';
+import '@fontsource-variable/jetbrains-mono';
+import '../styles/global.css';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import Terminal from '../components/easter/Terminal.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const {
+  title,
+  description = 'Xavier Ogay — cybersecurity engineer. MSc Cyber Security (EPFL/ETHZ). Binary analysis, systems security, offensive tooling.',
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta name="generator" content={Astro.generator} />
+  </head>
+  <body>
+    <Nav />
+    <main>
+      <slot />
+    </main>
+    <Footer />
+    <Terminal />
+    <script>
+      import '../scripts/reveal.ts';
+    </script>
+  </body>
+</html>
+
+<style>
+  main {
+    padding-top: 4rem;
+  }
+</style>

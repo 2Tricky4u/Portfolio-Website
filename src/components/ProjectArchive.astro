@@ -1,0 +1,143 @@
+---
+import { getCollection } from 'astro:content';
+import SectionHeading from './SectionHeading.astro';
+
+const archive = (await getCollection('projects', ({ data }) => !data.featured)).sort(
+  (a, b) => a.data.order - b.data.order
+);
+---
+
+<section class="section">
+  <div class="container">
+    <SectionHeading index="03" label="more work" title="Project Archive" />
+    <ul class="archive" data-reveal>
+      {
+        archive.map((p) => {
+          const href = p.data.links.github ?? p.data.links.pdf ?? p.data.links.demo;
+          return (
+            <li>
+              <span class="year mono">{p.data.period}</span>
+              <div class="main">
+                <p class="title">
+                  {href ? (
+                    <a class="title-link" href={href} target="_blank" rel="noopener noreferrer">
+                      {p.data.title}
+                    </a>
+                  ) : (
+                    p.data.title
+                  )}
+                </p>
+                <p class="summary">{p.data.summary}</p>
+              </div>
+              <ul class="tags">
+                {p.data.tags.slice(0, 3).map((t) => (
+                  <li class="tag">{t}</li>
+                ))}
+              </ul>
+              <span class="links mono">
+                {p.data.links.github && (
+                  <a class="link" href={p.data.links.github} target="_blank" rel="noopener noreferrer">
+                    code
+                  </a>
+                )}
+                {p.data.links.pdf && (
+                  <a class="link" href={p.data.links.pdf} target="_blank" rel="noopener noreferrer">
+                    pdf
+                  </a>
+                )}
+                {p.data.links.demo && (
+                  <a class="link" href={p.data.links.demo} target="_blank" rel="noopener noreferrer">
+                    demo
+                  </a>
+                )}
+              </span>
+            </li>
+          );
+        })
+      }
+    </ul>
+    <p class="note" data-reveal>
+      More on <a class="link" href="https://github.com/2Tricky4u?tab=repositories" target="_blank" rel="noopener noreferrer">GitHub</a> — some university projects live in private repos;
+      <a class="link" href="#contact">reach out</a> for a look at the source.
+    </p>
+  </div>
+</section>
+
+<style>
+  .archive {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .archive > li {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr auto auto;
+    align-items: baseline;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-2);
+    border-bottom: 1px solid var(--border);
+    transition: background var(--transition-fast);
+  }
+
+  .archive > li:hover {
+    background: var(--bg-1);
+  }
+
+  .year {
+    color: var(--text-faint);
+    font-size: var(--text-xs);
+  }
+
+  .title {
+    font-weight: 600;
+  }
+
+  .title-link {
+    transition: color var(--transition-fast);
+  }
+
+  .title-link:hover {
+    color: var(--red);
+  }
+
+  .summary {
+    color: var(--text-faint);
+    font-size: var(--text-sm);
+    max-width: 38rem;
+  }
+
+  .tags {
+    display: flex;
+    gap: var(--space-2);
+    list-style: none;
+    padding: 0;
+  }
+
+  .links {
+    display: flex;
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+  }
+
+  .note {
+    margin-top: var(--space-5);
+    color: var(--text-faint);
+    font-size: var(--text-sm);
+  }
+
+  @media (max-width: 900px) {
+    .archive > li {
+      grid-template-columns: 1fr auto;
+    }
+
+    .year {
+      order: 1;
+    }
+
+    .tags {
+      display: none;
+    }
+  }
+</style>

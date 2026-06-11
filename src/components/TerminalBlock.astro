@@ -1,0 +1,60 @@
+---
+interface Props {
+  label?: string;
+}
+
+const { label = 'terminal' } = Astro.props;
+---
+
+<figure class="terminal-block">
+  <figcaption class="terminal-header">
+    <span class="t-dot r" aria-hidden="true"></span>
+    <span class="t-dot" aria-hidden="true"></span>
+    <span class="t-dot" aria-hidden="true"></span>
+    <span class="terminal-label">{label}</span>
+  </figcaption>
+  <slot />
+</figure>
+
+<style>
+  .terminal-block {
+    margin: 0 0 var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-2);
+  }
+
+  .terminal-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-1);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .t-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+
+  .t-dot.r {
+    background: var(--red);
+  }
+
+  .terminal-label {
+    margin-left: var(--space-2);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-faint);
+  }
+
+  .terminal-block :global(pre) {
+    border: none !important;
+    border-radius: 0 !important;
+    margin-bottom: 0 !important;
+  }
+</style>

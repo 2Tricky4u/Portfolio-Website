@@ -1,0 +1,151 @@
+---
+import SectionHeading from './SectionHeading.astro';
+---
+
+<section id="contact" class="section">
+  <div class="container">
+    <SectionHeading index="05" label="get in touch" title="Contact" />
+    <div class="grid">
+      <div class="left" data-reveal>
+        <p class="pitch">
+          Looking for someone who is at ease below the abstraction layers? I'm open to
+          cybersecurity roles starting July 2026 — and always happy to talk binary analysis,
+          systems security, or a project idea.
+        </p>
+        <p class="email mono">
+          <a class="link" id="email-link" data-user="xaga.ogay" data-domain="gmail.com" href="#contact"
+            >[email protected]</a
+          >
+        </p>
+        <ul class="social mono">
+          <li>
+            <a class="link" href="https://linkedin.com/in/xavier-ogay" target="_blank" rel="noopener noreferrer">linkedin</a>
+          </li>
+          <li>
+            <a class="link" href="https://github.com/2Tricky4u" target="_blank" rel="noopener noreferrer">github</a>
+          </li>
+          <li>
+            <a class="link" href="https://people.epfl.ch/xavier.ogay" target="_blank" rel="noopener noreferrer">epfl profile</a>
+          </li>
+        </ul>
+        <div class="cv-row">
+          <a
+            class="btn btn-ghost"
+            href="https://drive.google.com/file/d/1QvlzlDPrODCkBERG-GFwfc5eGkK12XTU/preview"
+            target="_blank"
+            rel="noopener noreferrer">View CV</a
+          >
+          <a
+            class="btn btn-ghost"
+            href="https://drive.google.com/uc?export=download&id=1QvlzlDPrODCkBERG-GFwfc5eGkK12XTU"
+            >Download PDF</a
+          >
+        </div>
+      </div>
+      <form name="submit-to-google-sheet" data-reveal style="--reveal-delay: 0.1s">
+        <label>
+          <span class="mono">name</span>
+          <input type="text" name="Name" required autocomplete="name" />
+        </label>
+        <label>
+          <span class="mono">email</span>
+          <input type="email" name="email" required autocomplete="email" />
+        </label>
+        <label>
+          <span class="mono">message</span>
+          <textarea name="Message" rows="6" required></textarea>
+        </label>
+        <button type="submit" class="btn btn-primary">Send message</button>
+        <p id="form-msg" class="mono" role="status"></p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<script>
+  import '../scripts/contact-form.ts';
+</script>
+
+<style>
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+    gap: var(--space-7);
+  }
+
+  .pitch {
+    font-size: var(--text-lg);
+    color: var(--text-muted);
+    margin-bottom: var(--space-4);
+    max-width: 32rem;
+  }
+
+  .email {
+    margin-bottom: var(--space-4);
+  }
+
+  .social {
+    display: flex;
+    gap: var(--space-4);
+    list-style: none;
+    padding: 0;
+    margin-bottom: var(--space-5);
+    color: var(--text-faint);
+  }
+
+  .cv-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  label span {
+    color: var(--text-faint);
+    font-size: var(--text-xs);
+  }
+
+  input,
+  textarea {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.7rem 0.9rem;
+    transition: border-color var(--transition-fast);
+    resize: vertical;
+  }
+
+  input:focus,
+  textarea:focus {
+    outline: none;
+    border-color: var(--red);
+  }
+
+  button {
+    align-self: flex-start;
+  }
+
+  #form-msg {
+    min-height: 1.5em;
+    font-size: var(--text-sm);
+  }
+
+  #form-msg.ok {
+    color: var(--green);
+  }
+
+  #form-msg.err {
+    color: var(--red);
+  }
+</style>

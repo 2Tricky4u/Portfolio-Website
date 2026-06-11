@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Dynamical Non-Photorealistic Rendering</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      span.underline{text-decoration: underline;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <link rel="stylesheet" href="icg_report.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Dynamical Non-Photorealistic Rendering</h1>
+</header>
+<figure>
+<img src="images/example_image.jpg" alt="Example image" width="300" /><figcaption>Example image</figcaption>
+</figure>
+<h1 id="final-report">Final report</h1>
+<h3 id="abstract">Abstract</h3>
+<p>In this project, we wanted to implement a set of “non-photorealistic” shaders in an artistic goal. We first wanted to start this project with a “toon” shading approach, as showed in the milestone report, we easily achieve to implement this effect by “quantizing” the colors. The next step was to implement an outline for each object to emphasize the cartoon style of this shader.</p>
+<p>When we finished this shader, we added a lot of parameters to make the experience very customizable. Moreover, to present our work in the best way possible, we created a new scene in Blender. In the scene you’ll find a lot of Star Wars references, and we thought that it would perfectly match the style of our shader.</p>
+<p>After this implementation, we still wanted to add more shaders, so we created a “heat” shader, where the user can choose the “cold” color and the “warm” color, and each color of the scene is computed depending on the distance and the direction to the light. Finally, because our goal was to add a lot of parameters, we mixed this shader with the toon one, meaning that we can “quantize” the color zones depending on the “temperature” and also added outlines to the actors of the scene, in the same way as the toon shader.</p>
+<p>The main advantage of this project is that is it very easy to incorporate other shaders to the project and to modify the existing ones, for example (and this is the last added feature) we implemented “filters” for the final displayed image to let the user modify the rendering even more, with a “negative” color effect or even a “black &amp; white” effect.</p>
+<h1 id="goals-and-deliverables-reminder">Goals and Deliverables (Reminder)</h1>
+<h4 id="basic-end-product">Basic end product</h4>
+<p>To have the passing grade (4.0), we would like to have at least one “Toon Rendering” completely done. We should be able to travel in it, like we could in the homework. We also would have sliders to control different parameters of our implementation.</p>
+<h4 id="extensions">Extensions</h4>
+<p>In top of that implementation, we would like to create more filters. It could be artistic or very experimental ones, so that the user could play with the options and parameters to create a unique rendering for their scene. We will link a demonstration blender scene as well to illustrate the different rendering we implemented. The additional points would then correspond to these other renderings and their mix.</p>
+<h4 id="end-product">End product</h4>
+<p>At the end, the main goal is to create from a single scene, experimental and artistic renderings just by selecting some options and playing with parameters. So our project would be more like a tool to create interesting images that differ from classical realistic rendering. Note that our renders should not be too heavy, so the final result wouldn’t be an image but rather a complete scene where we could travel and express our artistic sense!</p>
+<h4 id="what-we-have-done">What we have done:</h4>
+<ul>
+<li>We implemented a “toon” shader by adapting the blinn-phong pipeline.</li>
+<li>Set up some sliders to manually modify the number of colors that we want the toon to have.</li>
+<li>We have set up some input to enter the maximum intensity we want to have for each rendering pass (i.e. ambient, diffuse, specular).</li>
+<li>We have set up some slider to select the intensity of each contribution of the Blinn-Phong model.</li>
+<li>We have set up a color picker to perform a color shifter.</li>
+<li>We have set up a color picker to modify the color that is not in light.</li>
+<li>We added dynamic sized outlines to the different shapes of the scene.</li>
+<li>We created a scene with moving objects and moving lights, which would well display our work.</li>
+<li>We added a new shader, “heatmap” which is related to light distance and angle.</li>
+<li>We added some filters like black and white and negative colors.</li>
+<li>We added some hotkeys to interact with the moving scene like ‘p’ to pause, ‘r’ to reset the scene, ‘v’ to enable/disable ships vibration, ‘l’ to start the movement of lights or ‘m’ to stop and play the music.</li>
+<li>We added the ability to move the camera in the scene with WASDQE</li>
+</ul>
+<h3 id="example-images-of-the-final-project">Example images of the final project</h3>
+<p>Here are some images of our project.</p>
+<p><img src="images/presentation.png" alt="Presentation image 1" width="300" /> <img src="images/presentation1.png" alt="Presentation image 2" width="300" /> <img src="images/presentation2.png" alt="Presentation image 3" width="300" /></p>
+<h4 id="tasks-repartition">Tasks repartition:</h4>
+<p>We planned to work the three of us together to be more efficient on the project. We each other help on assigned tasks. So we think to have all worked equally for this project.</p>
+<p>But principally worked as follows:</p>
+<ul>
+<li>Victor: 0.333333
+<ul>
+<li>Toon shader and heatmap</li>
+</ul></li>
+<li>David: 0.333333
+<ul>
+<li>Outlines and hmtl/css</li>
+</ul></li>
+<li>Xavier: 0.333333
+<ul>
+<li>Scene and Video</li>
+</ul></li>
+</ul>
+<h3 id="technical-approach">Technical approach</h3>
+<h5 id="toon-shading">Toon Shading:</h5>
+<p>In fact, creating a “toon” effect, is a very natural operation, we only needed to break the color gradients into different plain color zones. To do so, changing our original Blinn-Phong model is more than enough.</p>
+<ul>
+<li>For the <em>ambient</em> component, there is no logical way to quantize the colors as explained above, as an ambient color is constant by definition. However, we quantized it exactly as the diffuse component, to make the shader more customizable, calling it “ambient” has no longer a rigorous sense though.</li>
+<li>For the <em>diffuse</em> component, as the color depends on the direction of the light at a given point, the dot product <code>nl</code> between the normal and the light direction is the value that is quantized. How does that work? Well, we created a function <code>quantize_value</code> that takes some parameters (especially the number of color levels) that define how the passed value (between 0 and 1) should be transformed. The overall calculation is not very complicated, simply a combination of <code>ceil</code> and division operations.</li>
+<li>Finally, the <em>specular</em> component uses the same logic, except that this time it is the value <code>hn</code> between the normal and the vector h (the bisector between light and view directions).</li>
+</ul>
+<h5 id="colors">Colors</h5>
+<p>We also added the ability to add hue to every different light contribution just by adding hue color to the computed Blinn-Phong color weighted by hue intensity. Each Blinn-Phong component (ambient, diffuse, specular) can each be separately modified (the mentioned hue impact and the intensity as well)</p>
+<p>A color shifter was also added by adding a ‘shifting color’ to the computed color. We clamp the addition and make it cycle so it doesn’t reach limit value (if so it continue shifting but from the black color)</p>
+<h5 id="outlines">Outlines</h5>
+<p>The way we implemented the outlines was vey similar to what we could find on the internet. There were two different passes.</p>
+<ul>
+<li>The first pass is to draw the <code>silhouette outline</code>, we inspired ourselves by looking at this <a href="https://stackoverflow.com/questions/46603878/silhouette-outlined-shader">resource</a>, we only inspired ourselves to give different color to each object, as it was explained in the article, but ended up rewriting it differently in our code.</li>
+<li>The second pass is to draw the <code>inner outline</code>, for this we inspired ourselves mostly by this <a href="https://omar-shehata.medium.com/better-outline-rendering-using-surface-ids-with-webgl-e13cdab1fd94">article</a>. We implemented the algorithm to extract the face id a little bit differently, as we were not using exactly the same technologies, and we also encountered some performance issues, so we had to try to optimize a little bit the algorithm to make it faster, by for example precomputing the adjacency matrix to be able to access the neighbor faces very efficiently.</li>
+</ul>
+<p>The two passes explained before, are stored into two different buffers, then to actually display the outline we pass these two buffers as uniforms, and by using a <code>for loop</code>, we looked at each neighboring pixel in the shader code, and if we look whether the color of the current pixel differed from its neighbor color, we render it using the border color, as we can choose which color we want to give to the borders.</p>
+<p>We encountered an issue at the beginning with the buffer, we had to enable the <code>depth</code> in the frame buffer, to correctly add the color to the actor’s faces, to take the closest object from the view point. As otherwise we had some issues where some hidden object would appear in front.</p>
+<p>We encountered an issue as well with the outline thickness. The way we wanted to do, was to iterate over close pixel with a <code>for loop</code> and pass the stop condition as a uniform representing the thickness of the outline, but we found out that it was not possible to use uniform as stop condition of a loop. To fix this issue, we decided not to unroll the loop manually, as it would have been a lot of code duplication, but rather set a max interactions in a <code>#define</code>, and then add a condition based on the uniform value to execute the code or not.</p>
+<h5 id="heatmap">Heatmap</h5>
+<p>The heat algorithm only uses two parameters to define the “temperature” of a given point:</p>
+<ul>
+<li>Light direction, meaning that the temperature grows with <code>nl</code></li>
+<li>Distance to the light, meaning that the temperature grows the distance (multiplied by a given factor)</li>
+</ul>
+<p>As said in the description, one can enable the option “quantize heat” to change the temperature gradient to an image where we clearly see the zones with a similar temperature. Also, the user can define how the distance impacts the temperature (if this parameter is at 0, only the angle between the normal and the light, and at 1, only the distance counts)</p>
+<p>Note that we have three lights and the scene, and each one equally impacts (each distance and angle counts) the temperature of the point, see <code>heat.frag.shader</code></p>
+<h5 id="scene">Scene</h5>
+<p>The map was made with blender in which we used Geometry nodes and Perlin noise to generate multiple layers of a deformed plan to generate a coherent map.</p>
+<figure>
+<img src="images/blender1.png" alt="blender image 1" width="500" /><figcaption>blender image 1</figcaption>
+</figure>
+<p>The following geometry nodes allows us to tweak the parameters and change the topography of a layer: <img src="images/blender2.png" alt="blender image 1" /></p>
+<p>The other objects like ship destroyer, tie fighter and pyramid, are free 3D models found on <a href="https://sketchfab.com/">https://sketchfab.com/</a>. They were all conscientiously placed on the scene and some of them were animated the same way we animated the solar system in the homework.</p>
+<p>We also set in the javascript some useful keybindings to have control on the scene animation.</p>
+<ul>
+<li>‘p’ pauses the scene by stopping the incrementation of the simulation time.</li>
+<li>‘r’ resets the scene by setting the simulation time to zero.</li>
+<li>‘v’ enables/disables the vibration of the moving ships by zeroing or scaling by a random factor the ship coordinates.</li>
+<li>‘l’ enables/disables the sinusoidal movement of the lights</li>
+<li>‘m’ enables/disables the music of the scene.</li>
+<li>‘mouse drag’: rotates the camera accordingly by using the appropriate matrix transformation.</li>
+<li>‘mouse scroll’: zooms in/out accordingly by using the appropriate matrix transformation.</li>
+</ul>
+<p>All following key camera movement move the camera center to achieve their goal:</p>
+<ul>
+<li>‘w’ moves the camera forward by using the appropriate matrix transformation.</li>
+<li>‘a’ moves the camera leftward by using the appropriate matrix transformation.</li>
+<li>‘s’ moves the camera backward by using the appropriate matrix transformation.</li>
+<li>‘d’ moves the camera rightward by using the appropriate matrix transformation.</li>
+<li>‘q’ moves the camera upward by using the appropriate matrix transformation.</li>
+<li>‘e’ moves the camera downward by using the appropriate matrix transformation.</li>
+</ul>
+<h3 id="results">Results</h3>
+<p>Click on image to open the video:</p>
+<p><a href="https://youtu.be/3y6X-bz8nNo"><img src="images/presentation.png" alt="VIDEO PRESENTATION" width="300" /></a></p>
+<h5 id="overall">overall</h5>
+<figure>
+<img src="images/presentation3.png" alt="result image 1" /><figcaption>result image 1</figcaption>
+</figure>
+<h5 id="controls">controls</h5>
+<p><img src="images/control.png" alt="result image 2" width="300" /> <img src="images/control1.png" alt="result image 2" width="300" /></p>
+<figure>
+<img src="images/control2.png" alt="result image 2" width="300" /><figcaption>result image 2</figcaption>
+</figure>
+<h1 id="resources">Resources</h1>
+<p>We used Blender to create the scene.<br />
+We used the homework pipeline and built upon it to create our rendering. We worked with the following sources:</p>
+<ul>
+<li><a href="https://petemcnally.files.wordpress.com/2013/01/all.jpg">Example image</a></li>
+<li><a href="https://all3dp.com/4/zbrush-2019-offers-non-photorealistic-rendering-easier-organization/">Concept images</a></li>
+<li><a href="https://www.blender.org/">Blender</a></li>
+<li><a href="https://kola.opus.hbz-nrw.de/frontdoor/deliver/index/docId/97/file/SA_Mueller.pdf">Study on NPR</a></li>
+<li><a href="https://viterbi-web.usc.edu/~jbarbic/cs420-s22/24-npr/24-npr.pdf">Lecture on NPR</a></li>
+<li><a href="https://gfx.cs.princeton.edu/proj/sg05lines/course7-4-npr.pdf">Lecture on NPR</a></li>
+<li><a href="https://www.slideserve.com/titus/a-non-photorealistic-fragment-shader-in-opengl-2-0">NPR for OpenGL</a></li>
+<li><a href="https://www.lighthouse3d.com/tutorials/glsl-12-tutorial/toon-shader-version-ii/">Toon Shader Example</a></li>
+<li><a href="https://stackoverflow.com/questions/46603878/silhouette-outlined-shader">Silhouette Outlined</a></li>
+<li><a href="https://omar-shehata.medium.com/how-to-render-outlines-in-webgl-8253c14724f9">Render Outlines 1</a></li>
+<li><a href="https://omar-shehata.medium.com/better-outline-rendering-using-surface-ids-with-webgl-e13cdab1fd94">Render Outlines 2</a></li>
+<li><a href="https://twitter.com/ianmaclarty/status/1499494878908403712">Render Outlines 3</a></li>
+</ul>
+</body>
+</html>

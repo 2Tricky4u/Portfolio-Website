@@ -1,0 +1,117 @@
+---
+import { Image } from 'astro:assets';
+import me from '../assets/me.png';
+---
+
+<section class="hero container">
+  <div class="hero-text" data-reveal>
+    <p class="kicker">// cybersecurity engineer</p>
+    <h1>Xavier Ogay</h1>
+    <p class="lede">
+      I work where software meets the machine: binary analysis, systems security, and
+      offensive tooling. Currently finishing a joint MSc in Cyber Security at
+      <a class="link" href="https://www.epfl.ch" target="_blank" rel="noopener noreferrer">EPFL</a> /
+      <a class="link" href="https://ethz.ch" target="_blank" rel="noopener noreferrer">ETH Zürich</a>,
+      graduating June 2026.
+    </p>
+    <p class="status mono">
+      <span class="pulse" aria-hidden="true"></span>
+      status: open to roles from 07/2026
+    </p>
+    <div class="cta-row">
+      <a href="#projects" class="btn btn-primary">View projects</a>
+      <a
+        href="https://drive.google.com/uc?export=download&id=1QvlzlDPrODCkBERG-GFwfc5eGkK12XTU"
+        class="btn btn-ghost">Download CV</a
+      >
+    </div>
+    <ul class="social-row mono">
+      <li><a class="link" href="https://github.com/2Tricky4u" target="_blank" rel="noopener noreferrer">github</a></li>
+      <li><a class="link" href="https://linkedin.com/in/xavier-ogay" target="_blank" rel="noopener noreferrer">linkedin</a></li>
+      <li><a class="link" href="#contact">email</a></li>
+    </ul>
+  </div>
+  <div class="hero-img" data-reveal style="--reveal-delay: 0.15s">
+    <Image src={me} alt="Portrait of Xavier Ogay" width={420} loading="eager" fetchpriority="high" />
+  </div>
+</section>
+
+<style>
+  .hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-7);
+    min-height: calc(100svh - 4rem);
+    padding-block: var(--space-7);
+  }
+
+  .hero-text {
+    max-width: 38rem;
+  }
+
+  h1 {
+    font-size: var(--text-hero);
+    margin: var(--space-2) 0 var(--space-4);
+  }
+
+  .lede {
+    font-size: var(--text-lg);
+    color: var(--text-muted);
+    margin-bottom: var(--space-4);
+  }
+
+  .status {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--text-faint);
+    margin-bottom: var(--space-5);
+  }
+
+  .pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+  }
+
+  .cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
+  }
+
+  .social-row {
+    display: flex;
+    gap: var(--space-4);
+    list-style: none;
+    padding: 0;
+    color: var(--text-faint);
+  }
+
+  .hero-img {
+    flex-shrink: 0;
+  }
+
+  .hero-img :global(img) {
+    width: clamp(14rem, 28vw, 24rem);
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid var(--red-dim);
+    outline: 1px solid var(--border);
+    outline-offset: 6px;
+  }
+
+  @media (max-width: 900px) {
+    .hero {
+      flex-direction: column-reverse;
+      justify-content: flex-end;
+      align-items: flex-start;
+      min-height: auto;
+      padding-top: var(--space-6);
+    }
+  }
+</style>

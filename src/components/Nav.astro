@@ -1,0 +1,189 @@
+---
+const links = [
+  { href: '/#experience', label: 'experience' },
+  { href: '/#projects', label: 'projects' },
+  { href: '/writeups', label: 'writeups' },
+  { href: '/#contact', label: 'contact' },
+];
+---
+
+<header class="nav-wrap">
+  <div id="scroll-progress" aria-hidden="true"></div>
+  <nav class="container">
+    <a href="/" class="monogram" aria-label="Home">
+      <span aria-hidden="true">X</span><span class="dot" aria-hidden="true">.</span>
+    </a>
+    <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false">
+      <span></span><span></span>
+    </button>
+    <ul class="nav-links">
+      {
+        links.map((l, i) => (
+          <li>
+            <a href={l.href}>
+              <span class="idx">0{i + 1}.</span>
+              {l.label}
+            </a>
+          </li>
+        ))
+      }
+      <li>
+        <button class="term-trigger" id="terminal-trigger" aria-label="Open terminal" title="Open terminal (Ctrl+`)">
+          &gt;_
+        </button>
+      </li>
+    </ul>
+  </nav>
+</header>
+
+<style>
+  .nav-wrap {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 100;
+    background: color-mix(in srgb, var(--bg-0) 75%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  #scroll-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 2px;
+    width: 0%;
+    background: var(--red);
+  }
+
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 4rem;
+  }
+
+  .monogram {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .monogram .dot {
+    color: var(--red);
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+    list-style: none;
+    padding: 0;
+  }
+
+  .nav-links a {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    transition: color var(--transition-fast);
+  }
+
+  .nav-links a:hover {
+    color: var(--text);
+  }
+
+  .idx {
+    color: var(--red);
+    margin-right: 0.3em;
+    font-size: var(--text-xs);
+  }
+
+  .term-trigger {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.25rem 0.55rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color var(--transition-fast), border-color var(--transition-fast);
+  }
+
+  .term-trigger:hover {
+    color: var(--red);
+    border-color: var(--red);
+  }
+
+  .menu-toggle {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+  }
+
+  .menu-toggle span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: var(--text);
+    transition: transform var(--transition-fast), opacity var(--transition-fast);
+  }
+
+  @media (max-width: 768px) {
+    .menu-toggle {
+      display: flex;
+    }
+
+    .nav-links {
+      position: absolute;
+      top: 4rem;
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0;
+      background: var(--bg-1);
+      border-bottom: 1px solid var(--border);
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s var(--ease-out);
+    }
+
+    .nav-links.open {
+      max-height: 20rem;
+    }
+
+    .nav-links li {
+      width: 100%;
+    }
+
+    .nav-links a {
+      display: block;
+      padding: 1rem clamp(1.25rem, 5vw, 3rem);
+    }
+
+    .term-trigger {
+      margin: 1rem clamp(1.25rem, 5vw, 3rem);
+    }
+  }
+</style>
+
+<script>
+  const toggle = document.querySelector<HTMLButtonElement>('.menu-toggle');
+  const list = document.querySelector<HTMLUListElement>('.nav-links');
+  toggle?.addEventListener('click', () => {
+    const open = list?.classList.toggle('open');
+    toggle.setAttribute('aria-expanded', String(!!open));
+  });
+  list?.querySelectorAll('a').forEach((a) =>
+    a.addEventListener('click', () => {
+      list.classList.remove('open');
+      toggle?.setAttribute('aria-expanded', 'false');
+    })
+  );
+</script>

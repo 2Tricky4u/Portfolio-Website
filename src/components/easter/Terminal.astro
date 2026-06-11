@@ -1,0 +1,149 @@
+<div id="terminal" hidden>
+  <div class="term-bar">
+    <div class="term-dots" aria-hidden="true">
+      <span class="dot dot-red"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+    </div>
+    <span class="term-title">xavier@xavierogay.ch — zsh</span>
+    <button class="term-close" aria-label="Close terminal">&times;</button>
+  </div>
+  <div class="term-body">
+    <div class="term-output"></div>
+    <div class="term-line">
+      <span class="term-prompt term-accent"></span>
+      <input
+        class="term-input"
+        type="text"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+        aria-label="Terminal input"
+      />
+    </div>
+  </div>
+</div>
+
+<style>
+  #terminal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(40rem, 92vw);
+    height: 22rem;
+    min-width: 18rem;
+    min-height: 10rem;
+    z-index: 500;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+    resize: both;
+    overflow: hidden;
+  }
+
+  #terminal[hidden] {
+    display: none;
+  }
+
+  .term-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-1);
+    border-bottom: 1px solid var(--border);
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+  }
+
+  .term-bar:active {
+    cursor: grabbing;
+  }
+
+  .term-dots {
+    display: flex;
+    gap: 6px;
+  }
+
+  .dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+
+  .dot-red {
+    background: var(--red);
+  }
+
+  .term-title {
+    flex: 1;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-faint);
+    text-align: center;
+  }
+
+  .term-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0.25rem;
+  }
+
+  .term-close:hover {
+    color: var(--red);
+  }
+
+  .term-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-3);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    overflow: hidden;
+  }
+
+  .term-output {
+    flex: 1;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text-muted);
+  }
+
+  #terminal :global(.term-accent) {
+    color: var(--red);
+  }
+
+  .term-line {
+    display: flex;
+    gap: 0.5em;
+    align-items: baseline;
+  }
+
+  .term-input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    caret-color: var(--red);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    padding: 0;
+  }
+</style>
+
+<script>
+  import '../../scripts/terminal.ts';
+</script>

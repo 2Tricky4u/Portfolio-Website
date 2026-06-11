@@ -1,0 +1,168 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  kicker?: string;
+  meta?: string[];
+  backHref?: string;
+  backLabel?: string;
+}
+
+const { title, description, kicker, meta = [], backHref = '/', backLabel = 'home' } = Astro.props;
+---
+
+<BaseLayout title={title} description={description}>
+  <article class="section">
+    <div class="prose-container">
+      <p class="back mono">
+        <a class="link" href={backHref}>&larr; {backLabel}</a>
+      </p>
+      {kicker && <p class="kicker">{kicker}</p>}
+      <h1>{title}</h1>
+      {
+        meta.length > 0 && (
+          <p class="meta mono">
+            {meta.map((m, i) => (
+              <>
+                {i > 0 && <span class="sep"> · </span>}
+                <span>{m}</span>
+              </>
+            ))}
+          </p>
+        )
+      }
+      <slot name="header-extra" />
+      <div class="prose">
+        <slot />
+      </div>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .prose-container {
+    max-width: var(--prose-max);
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 5vw, 3rem);
+  }
+
+  .back {
+    margin-bottom: var(--space-5);
+  }
+
+  h1 {
+    font-size: var(--text-2xl);
+    margin: var(--space-2) 0 var(--space-3);
+  }
+
+  .meta {
+    color: var(--text-faint);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-5);
+  }
+
+  .sep {
+    color: var(--border);
+  }
+
+  .prose {
+    color: var(--text-muted);
+  }
+
+  .prose :global(h2) {
+    color: var(--text);
+    font-size: var(--text-xl);
+    margin: var(--space-6) 0 var(--space-3);
+  }
+
+  .prose :global(h2::before) {
+    content: '## ';
+    color: var(--red);
+    font-family: var(--font-mono);
+    font-size: 0.7em;
+  }
+
+  .prose :global(h3) {
+    color: var(--text);
+    font-size: var(--text-lg);
+    margin: var(--space-5) 0 var(--space-2);
+  }
+
+  .prose :global(p) {
+    margin-bottom: var(--space-3);
+  }
+
+  .prose :global(ul),
+  .prose :global(ol) {
+    padding-left: 1.4rem;
+    margin-bottom: var(--space-3);
+  }
+
+  .prose :global(li) {
+    margin-bottom: var(--space-2);
+  }
+
+  .prose :global(strong) {
+    color: var(--text);
+  }
+
+  .prose :global(a) {
+    color: var(--red-soft);
+  }
+
+  .prose :global(a:hover) {
+    color: var(--red);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .prose :global(img) {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-block: var(--space-4);
+    height: auto;
+  }
+
+  .prose :global(pre) {
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-4);
+    overflow-x: auto;
+  }
+
+  .prose :global(code) {
+    font-family: var(--font-mono);
+  }
+
+  .prose :global(:not(pre) > code) {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.1em 0.35em;
+    font-size: 0.875em;
+    color: var(--red-soft);
+  }
+
+  .prose :global(blockquote) {
+    border-left: 2px solid var(--red);
+    padding-left: var(--space-3);
+    color: var(--text-faint);
+    margin-bottom: var(--space-3);
+  }
+
+  .prose :global(table) {
+    border-collapse: collapse;
+    margin-bottom: var(--space-4);
+    font-size: var(--text-sm);
+  }
+
+  .prose :global(th),
+  .prose :global(td) {
+    border: 1px solid var(--border);
+    padding: 0.4rem 0.8rem;
+  }
+</style>

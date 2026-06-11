@@ -1,0 +1,236 @@
+---
+import SectionHeading from './SectionHeading.astro';
+
+interface Entry {
+  period: string;
+  title: string;
+  place: string;
+  details?: string[];
+}
+
+const experience: Entry[] = [
+  {
+    period: '2025 — 2026',
+    title: "Master's thesis — Symbolic LLVM Memory Sandboxing for WebAssembly",
+    place: 'EPFL, Lausanne',
+    details: [
+      'Static analysis framework for memory safety of WASM smart contracts at the LLVM level.',
+    ],
+  },
+  {
+    period: '2024 — 2025',
+    title: 'Research project in cybersecurity — AutoMutate++',
+    place: 'EPFL, Lausanne',
+    details: ['Automated artifact mutation and differential testing against AV/EDR products.'],
+  },
+  {
+    period: 'Jun — Nov 2018',
+    title: 'Mandatory military service (ER)',
+    place: 'Swiss Army, ERPM 19-2, Sion',
+  },
+  {
+    period: 'Jun 2015',
+    title: 'Internship — Computer Science',
+    place: 'CGN, Lausanne',
+  },
+  {
+    period: 'Mar 2014',
+    title: 'Internship — Electronic Engineering',
+    place: 'BOBST SA, Mex',
+  },
+];
+
+const education: Entry[] = [
+  {
+    period: '2023 — 2026',
+    title: 'MSc Cyber Security (joint degree)',
+    place: 'EPFL, Lausanne & ETH Zürich',
+    details: [
+      'Focus: software security, hardware security, system & network security, deep learning.',
+    ],
+  },
+  {
+    period: '2019 — 2023',
+    title: 'BSc Computer Science',
+    place: 'EPFL, Lausanne',
+    details: ['Focus: machine learning, embedded systems, financial economics.'],
+  },
+  {
+    period: '2018 — 2019',
+    title: 'Cambridge C1 Advanced (CAE)',
+    place: 'EC School, Vancouver',
+  },
+  {
+    period: '2016 — 2018',
+    title: 'High School Maturity — Maths & Physics',
+    place: 'Gymnase Auguste Piccard, Lausanne',
+  },
+];
+
+const skills = [
+  'C/C++',
+  'Rust',
+  'Python',
+  'Java',
+  'Kotlin',
+  'Scala',
+  'x86/MIPS ASM',
+  'VHDL',
+  'LLVM',
+  'WebAssembly',
+  'PyTorch',
+  'Docker',
+  'Git',
+  'Binary analysis',
+  'Side channels',
+  'Cryptography',
+];
+---
+
+<section id="experience" class="section">
+  <div class="container">
+    <SectionHeading index="01" label="background" title="Experience & Education" />
+    <div class="columns">
+      <div data-reveal>
+        <h3 class="col-title mono">experience</h3>
+        <ol class="timeline">
+          {
+            experience.map((e) => (
+              <li>
+                <p class="period mono">{e.period}</p>
+                <p class="entry-title">{e.title}</p>
+                <p class="place">{e.place}</p>
+                {e.details?.map((d) => <p class="detail">{d}</p>)}
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+      <div data-reveal style="--reveal-delay: 0.1s">
+        <h3 class="col-title mono">education</h3>
+        <ol class="timeline">
+          {
+            education.map((e) => (
+              <li>
+                <p class="period mono">{e.period}</p>
+                <p class="entry-title">{e.title}</p>
+                <p class="place">{e.place}</p>
+                {e.details?.map((d) => <p class="detail">{d}</p>)}
+              </li>
+            ))
+          }
+        </ol>
+        <details class="coursework">
+          <summary class="mono">selected coursework</summary>
+          <p class="detail">
+            Software Security, System Security, Hardware Security, Network Security, Security of
+            Wireless Networks, Advanced Privacy Enhancing Technologies, Deep Learning, Advanced
+            Computer Architecture, Applied Data Analysis, Big Data, Operating Systems, Computer
+            Graphics, and more at
+            <a class="link" href="https://people.epfl.ch/xavier.ogay" target="_blank" rel="noopener noreferrer">
+              my EPFL profile</a
+            >.
+          </p>
+        </details>
+      </div>
+    </div>
+    <div class="skills" data-reveal>
+      <h3 class="col-title mono">core skills</h3>
+      <ul>
+        {skills.map((s) => <li class="tag">{s}</li>)}
+      </ul>
+    </div>
+  </div>
+</section>
+
+<style>
+  .columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+    gap: var(--space-7);
+  }
+
+  .col-title {
+    color: var(--text-faint);
+    font-weight: 500;
+    margin-bottom: var(--space-4);
+    text-transform: lowercase;
+    letter-spacing: 0.05em;
+  }
+
+  .timeline {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border-left: 1px solid var(--border);
+  }
+
+  .timeline li {
+    position: relative;
+    padding: 0 0 var(--space-5) var(--space-4);
+  }
+
+  .timeline li::before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: 0.45rem;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--red);
+  }
+
+  .period {
+    color: var(--red-soft);
+    font-size: var(--text-xs);
+    margin-bottom: var(--space-1);
+  }
+
+  .entry-title {
+    font-weight: 600;
+  }
+
+  .place {
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+  }
+
+  .detail {
+    color: var(--text-faint);
+    font-size: var(--text-sm);
+    margin-top: var(--space-1);
+  }
+
+  .coursework {
+    margin-top: var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: var(--space-3);
+  }
+
+  .coursework summary {
+    cursor: pointer;
+    color: var(--text-muted);
+  }
+
+  .coursework summary:hover {
+    color: var(--red);
+  }
+
+  .coursework .detail {
+    margin-top: var(--space-3);
+  }
+
+  .skills {
+    margin-top: var(--space-7);
+  }
+
+  .skills ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    list-style: none;
+    padding: 0;
+  }
+</style>

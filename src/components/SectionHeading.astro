@@ -1,0 +1,28 @@
+---
+interface Props {
+  index: string;
+  label: string;
+  title: string;
+}
+
+const { index, label, title } = Astro.props;
+---
+
+<div class="section-heading" data-reveal>
+  <p class="kicker">{index}. {label}</p>
+  <h2>{title}</h2>
+</div>
+
+<style>
+  .section-heading {
+    margin-bottom: var(--space-7);
+  }
+
+  .kicker {
+    margin-bottom: var(--space-2);
+  }
+
+  h2 {
+    font-size: var(--text-2xl);
+  }
+</style>

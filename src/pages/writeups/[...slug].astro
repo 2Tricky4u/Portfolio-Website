@@ -1,0 +1,32 @@
+---
+import { getCollection, render } from 'astro:content';
+import ProseLayout from '../../layouts/ProseLayout.astro';
+
+export async function getStaticPaths() {
+  const writeups = await getCollection('writeups', ({ data }) => !data.draft);
+  return writeups.map((w) => ({ params: { slug: w.id }, props: { writeup: w } }));
+}
+
+const { writeup } = Astro.props;
+const { Content } = await render(writeup);
+
+const meta = [
+  writeup.data.pubDate.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }),
+  ...writeup.data.tags,
+];
+---
+
+<ProseLayout
+  title={writeup.data.title}
+  description={writeup.data.description}
+  kicker="// writeup"
+  meta={meta}
+  backHref="/writeups"
+  backLabel="writeups"
+>
+  <Content />
+</ProseLayout>

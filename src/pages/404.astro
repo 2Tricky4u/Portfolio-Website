@@ -1,0 +1,46 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="404 — Xavier Ogay" description="Page not found.">
+  <section class="section container">
+    <div class="term mono">
+      <p><span class="accent">xavier@xavierogay.ch:~$</span> cat {'{requested_page}'}</p>
+      <p class="err">cat: no such file or directory (404)</p>
+      <p><span class="accent">xavier@xavierogay.ch:~$</span> cd /</p>
+    </div>
+    <h1>Page not found</h1>
+    <a href="/" class="btn btn-primary">Back to home</a>
+  </section>
+</BaseLayout>
+
+<style>
+  section {
+    min-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: var(--space-4);
+  }
+
+  .term {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: var(--space-4);
+    color: var(--text-muted);
+  }
+
+  .accent {
+    color: var(--red);
+  }
+
+  .err {
+    color: var(--text-faint);
+  }
+
+  h1 {
+    font-size: var(--text-2xl);
+  }
+</style>

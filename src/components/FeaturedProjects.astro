@@ -1,0 +1,145 @@
+---
+import { Image } from 'astro:assets';
+import { getCollection } from 'astro:content';
+import SectionHeading from './SectionHeading.astro';
+
+const featured = (await getCollection('projects', ({ data }) => data.featured)).sort(
+  (a, b) => a.data.order - b.data.order
+);
+---
+
+<section id="projects" class="section alt">
+  <div class="container">
+    <SectionHeading index="02" label="selected work" title="Featured Projects" />
+    <div class="list">
+      {
+        featured.map((p, i) => (
+          <article class:list={['feature', { flip: i % 2 === 1 }]} data-reveal>
+            {p.data.cover && (
+              <a href={`/projects/${p.id}`} class="cover" aria-hidden="true" tabindex={-1}>
+                <Image src={p.data.cover} alt="" widths={[480, 800]} sizes="(max-width: 900px) 92vw, 480px" />
+              </a>
+            )}
+            <div class="info">
+              <p class="kicker">
+                featured {p.data.org && <>&middot; {p.data.org.toLowerCase()}</>}
+              </p>
+              <h3>
+                <a href={`/projects/${p.id}`}>{p.data.title}</a>
+              </h3>
+              <p class="summary">{p.data.summary}</p>
+              <ul class="tags">
+                {p.data.tags.map((t) => (
+                  <li class="tag">{t}</li>
+                ))}
+              </ul>
+              <div class="links mono">
+                <a class="link" href={`/projects/${p.id}`}>
+                  case study &rarr;
+                </a>
+                {p.data.links.github && (
+                  <a class="link" href={p.data.links.github} target="_blank" rel="noopener noreferrer">
+                    github
+                  </a>
+                )}
+                {p.data.links.pdf && (
+                  <a class="link" href={p.data.links.pdf} target="_blank" rel="noopener noreferrer">
+                    pdf
+                  </a>
+                )}
+              </div>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .alt {
+    background: var(--bg-1);
+    border-block: 1px solid var(--border);
+  }
+
+  .list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+  }
+
+  .feature {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+  }
+
+  .feature.flip {
+    flex-direction: row-reverse;
+  }
+
+  .cover {
+    flex: 0 0 44%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color var(--transition-fast), transform var(--transition-fast);
+  }
+
+  .cover:hover {
+    border-color: var(--red);
+    transform: translateY(-3px);
+  }
+
+  .cover :global(img) {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+  }
+
+  .info {
+    flex: 1;
+  }
+
+  h3 {
+    font-size: var(--text-xl);
+    margin: var(--space-2) 0 var(--space-3);
+  }
+
+  h3 a {
+    transition: color var(--transition-fast);
+  }
+
+  h3 a:hover {
+    color: var(--red);
+  }
+
+  .summary {
+    color: var(--text-muted);
+    margin-bottom: var(--space-3);
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    list-style: none;
+    padding: 0;
+    margin-bottom: var(--space-3);
+  }
+
+  .links {
+    display: flex;
+    gap: var(--space-4);
+  }
+
+  @media (max-width: 900px) {
+    .feature,
+    .feature.flip {
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--space-4);
+    }
+  }
+</style>

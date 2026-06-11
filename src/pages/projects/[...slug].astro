@@ -1,0 +1,90 @@
+---
+import { getCollection, render } from 'astro:content';
+import { Image } from 'astro:assets';
+import ProseLayout from '../../layouts/ProseLayout.astro';
+
+export async function getStaticPaths() {
+  const featured = await getCollection('projects', ({ data }) => data.featured);
+  return featured.map((p) => ({ params: { slug: p.id }, props: { project: p } }));
+}
+
+const { project } = Astro.props;
+const { Content } = await render(project);
+
+const meta = [project.data.period, ...(project.data.org ? [project.data.org] : [])];
+---
+
+<ProseLayout
+  title={project.data.title}
+  description={project.data.summary}
+  kicker="// case study"
+  meta={meta}
+  backHref="/#projects"
+  backLabel="projects"
+>
+  <Fragment slot="header-extra">
+    <ul class="tags">
+      {project.data.tags.map((t) => <li class="tag">{t}</li>)}
+    </ul>
+    <div class="links mono">
+      {
+        project.data.links.github && (
+          <a class="link" href={project.data.links.github} target="_blank" rel="noopener noreferrer">
+            github &nearr;
+          </a>
+        )
+      }
+      {
+        project.data.links.pdf && (
+          <a class="link" href={project.data.links.pdf} target="_blank" rel="noopener noreferrer">
+            pdf &nearr;
+          </a>
+        )
+      }
+      {
+        project.data.links.demo && (
+          <a class="link" href={project.data.links.demo} target="_blank" rel="noopener noreferrer">
+            demo &nearr;
+          </a>
+        )
+      }
+    </div>
+    {
+      project.data.cover && (
+        <Image
+          class="cover"
+          src={project.data.cover}
+          alt=""
+          widths={[480, 800, 1200]}
+          sizes="(max-width: 768px) 92vw, 672px"
+        />
+      )
+    }
+  </Fragment>
+  <Content />
+</ProseLayout>
+
+<style>
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    list-style: none;
+    padding: 0;
+    margin-bottom: var(--space-3);
+  }
+
+  .links {
+    display: flex;
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+  }
+
+  .cover {
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: var(--space-5);
+  }
+</style>
