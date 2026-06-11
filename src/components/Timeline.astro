@@ -9,6 +9,7 @@ import ec from '../assets/logos/ec.png';
 import bobst from '../assets/logos/bobst.png';
 import cgn from '../assets/logos/cgn.png';
 import army from '../assets/logos/army.png';
+import cyd from '../assets/logos/cyd.png';
 
 interface Entry {
   period: string;
@@ -20,19 +21,19 @@ interface Entry {
 
 const experience: Entry[] = [
   {
-    period: '2025 — 2026',
-    title: "Master's thesis — Symbolic LLVM Memory Sandboxing for WebAssembly",
+    period: '2026',
+    title: "Master's thesis — AutoMutate++: Automated Artifact Mutation against AV/EDR",
+    place: 'armasuisse, Cyber-Defence Campus (CYD)',
+    details: ['Closed-loop EDR evaluation in industry — multi-layer mutation and differential testing.'],
+    logos: [cyd],
+  },
+  {
+    period: '2025',
+    title: 'Research project — Symbolic LLVM Memory Sandboxing for WebAssembly',
     place: 'EPFL, Lausanne',
     details: [
       'Static analysis framework for memory safety of WASM smart contracts at the LLVM level.',
     ],
-    logos: [epfl],
-  },
-  {
-    period: '2024 — 2025',
-    title: 'Research project in cybersecurity — AutoMutate++',
-    place: 'EPFL, Lausanne',
-    details: ['Automated artifact mutation and differential testing against AV/EDR products.'],
     logos: [epfl],
   },
   {

@@ -43,7 +43,8 @@ export function isMatrixActive(): boolean {
 }
 
 export function toggleMatrix(opts: ToggleOptions = {}): boolean {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+  // Explicitly user-triggered (phone click / `hack` command), so it runs even
+  // when the OS requests reduced motion — the user asked for it.
   active ? stop() : start(opts);
   return active;
 }

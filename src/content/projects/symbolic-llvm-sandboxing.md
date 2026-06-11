@@ -1,11 +1,11 @@
 ---
 title: Symbolic LLVM Memory Sandboxing for WebAssembly
 summary: A static analysis framework at the LLVM level that proves memory safety of WASM smart contracts and emits optimized runtime checks only where safety cannot be proven.
-period: 2025 – 2026
-org: EPFL · Master's thesis
+period: '2025'
+org: EPFL · Research project
 tags: [LLVM, WebAssembly, 'C++', Static Analysis, Symbolic Execution]
 featured: true
-order: 1
+order: 2
 cover: ../../assets/projects/MP.png
 links:
   pdf: /doc/MP_slides.pdf
@@ -15,7 +15,7 @@ links:
 
 WebAssembly is increasingly used as an execution layer for smart contracts, where a single memory-safety bug can be catastrophic and execution must remain strictly deterministic. Conventional sandboxing approaches insert bounds checks on every memory access, paying a heavy runtime cost even when most accesses are provably safe.
 
-My Master's thesis asks: how many of those checks can a compiler *prove away* — and how cheap can the remaining ones be made?
+This research project asks: how many of those checks can a compiler *prove away* — and how cheap can the remaining ones be made?
 
 ## Approach
 
@@ -29,4 +29,4 @@ Accesses the analysis proves in-bounds need no instrumentation; for the rest, th
 
 ## Results
 
-The framework was evaluated on real-world computation kernels, demonstrating that a large share of naive bounds checks can be eliminated while preserving full memory safety. The [full thesis](/doc/Master_Thesis.pdf) has the details; the [slide deck](/doc/MP_slides.pdf) gives a condensed overview.
+The framework was evaluated on real-world computation kernels, demonstrating that a large share of naive bounds checks can be eliminated while preserving full memory safety. The [full report](/doc/Master_Thesis.pdf) has the details; the [slide deck](/doc/MP_slides.pdf) gives a condensed overview.

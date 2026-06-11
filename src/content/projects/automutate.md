@@ -1,11 +1,11 @@
 ---
 title: 'AutoMutate++: Automated Artifact Mutation against AV/EDR'
 summary: A closed-loop EDR evaluation framework in Rust that mutates software artifacts across multiple layers and differentially tests them against Windows Defender, MDE, and Cortex XDR.
-period: 2024 – 2025
-org: EPFL · Research project in cybersecurity
+period: '2026'
+org: armasuisse · Cyber-Defence Campus (CYD)
 tags: [Rust, EDR, LLVM, tree-sitter, Windows, Security Research]
 featured: true
-order: 2
+order: 1
 cover: ../../assets/projects/Automutate.png
 links:
   github: https://github.com/2Tricky4u/Automated-Analysis-and-Mutation-of-Software-Artifacts-against-AV-EDR
@@ -15,7 +15,7 @@ links:
 
 Endpoint Detection and Response (EDR) products are the front line of enterprise defense, but *what exactly* triggers their detections is opaque — both to defenders tuning them and to researchers evaluating them. Understanding which artifact features a detection hinges on usually requires slow, manual trial and error.
 
-AutoMutate++ automates that process: it systematically mutates a software artifact and observes which mutations flip the verdict of real EDR products, localizing the features detections depend on.
+AutoMutate++ — my Master's thesis, carried out in industry at armasuisse's Cyber-Defence Campus (CYD) — automates that process: it systematically mutates a software artifact and observes which mutations flip the verdict of real EDR products, localizing the features detections depend on.
 
 ## Approach
 
@@ -27,4 +27,4 @@ The framework, written in Rust, runs a closed feedback loop:
 
 ## Results
 
-The framework systematically discovers which artifact characteristics individual EDR products key on, turning a manual reverse-engineering exercise into a reproducible, automated measurement. Conducted as authorized security research at EPFL; source and report are on GitHub.
+The framework systematically discovers which artifact characteristics individual EDR products key on, turning a manual reverse-engineering exercise into a reproducible, automated measurement. Conducted as authorized security research for my Master's thesis at the Cyber-Defence Campus (armasuisse); source and report are on GitHub.
