@@ -1,7 +1,8 @@
 ---
-/* Faint ASCII watermark concentrated on the left/right borders (content sits
-   in the middle), built from several layers that each scroll at a different
-   speed for a real multi-depth parallax. Decorative only. */
+/* Faint ASCII watermark on the left/right borders (content sits in the
+   middle). Each layer is a seamlessly-tiled column that scrolls at its own
+   speed and wraps with a modulo, so the texture is infinite and the parallax
+   never runs out. Decorative only. */
 
 const HEX = '0123456789abcdef';
 const PRINT = 'etaoinshrdlucmfwypvbgkqjxz./_-()[]{}<>=;:*&^%$#@!01';
@@ -15,43 +16,53 @@ const rand = () => {
 const pick = (s: string) => s[Math.floor(rand() * s.length)];
 const byte = () => `${pick(HEX)}${pick(HEX)}`;
 
-// Left layer: narrow hexdump column.
-const left = Array.from({ length: 80 }, (_, i) => {
+// One tile per layer; rendered several times to wrap seamlessly.
+const leftTile = Array.from({ length: 46 }, (_, i) => {
   const off = (i * 8).toString(16).padStart(6, '0');
   const bytes = Array.from({ length: 6 }, byte).join(' ');
   const ascii = Array.from({ length: 6 }, () => (rand() > 0.4 ? pick(PRINT) : '.')).join('');
   return `${off}  ${bytes} |${ascii}|`;
 }).join('\n');
 
-// Right layer: binary stream.
-const right = Array.from({ length: 80 }, () =>
+const rightTile = Array.from({ length: 46 }, () =>
   Array.from({ length: 3 }, () =>
     Array.from({ length: 8 }, () => (rand() > 0.5 ? '1' : '0')).join('')
   ).join(' ')
 ).join('\n');
 
-// Far layer: very sparse, wide hex grid that barely moves.
-const far = Array.from({ length: 60 }, () =>
+const farTile = Array.from({ length: 34 }, () =>
   Array.from({ length: 22 }, byte).join('  ')
 ).join('\n');
 
-// Near layer: floating opcodes / tokens, moves fastest.
 const TOKENS = [
   '0xDEADBEEF', '7f45 4c46', 'ELF64', 'mov rax, rdi', 'xor eax, eax', 'jmp $+2',
   'ret', '0x00400000', 'nop', '\\x90\\x90', 'int3', 'syscall', 'call rsp',
   'SIGSEGV', 'PT_LOAD', '.text', '0xCAFEBABE', 'leave', 'push rbp', 'shellcode',
 ];
-const near = Array.from({ length: 22 }, (_, i) => {
+const nearTile = Array.from({ length: 14 }, () => {
   const indent = ' '.repeat(Math.floor(rand() * 6));
   return `${indent}${TOKENS[Math.floor(rand() * TOKENS.length)]}`;
 }).join('\n\n');
+
+const COPIES = 5;
+const layers = [
+  { cls: 'far', speed: 0.05, tile: farTile },
+  { cls: 'left', speed: 0.22, tile: leftTile },
+  { cls: 'right', speed: 0.38, tile: rightTile },
+  { cls: 'near', speed: 0.62, tile: nearTile },
+];
 ---
 
 <div class="bg-ascii" aria-hidden="true">
-  <pre class="layer far" data-speed="0.05">{far}</pre>
-  <pre class="layer left" data-speed="0.22">{left}</pre>
-  <pre class="layer right" data-speed="0.36">{right}</pre>
-  <pre class="layer near" data-speed="0.6">{near}</pre>
+  {
+    layers.map((l) => (
+      <div class:list={['layer', l.cls]} data-speed={l.speed}>
+        {Array.from({ length: COPIES }).map(() => (
+          <pre class="tile">{l.tile}</pre>
+        ))}
+      </div>
+    ))
+  }
 </div>
 
 <style>
@@ -66,54 +77,62 @@ const near = Array.from({ length: 22 }, (_, i) => {
 
   .layer {
     position: absolute;
-    top: -10vh;
+    top: 0;
+    will-change: transform;
+  }
+
+  .tile {
     margin: 0;
     font-family: var(--font-mono);
     color: var(--red);
     white-space: pre;
-    will-change: transform;
   }
 
   .far {
     left: 50%;
-    transform: translateX(-50%);
-    width: max-content;
+    opacity: 0.025;
+  }
+  .far .tile {
     font-size: 0.85rem;
     line-height: 2.1;
     letter-spacing: 0.18em;
-    opacity: 0.022;
+    transform: translateX(-50%);
+    width: max-content;
   }
 
   .left {
     left: clamp(0.5rem, 3vw, 4.5rem);
+    opacity: 0.08;
+  }
+  .left .tile {
     font-size: 0.72rem;
-    line-height: 1.55;
-    opacity: 0.07;
+    line-height: 1.6;
   }
 
   .right {
     right: clamp(0.5rem, 3vw, 4.5rem);
-    text-align: right;
+    opacity: 0.08;
+  }
+  .right .tile {
     font-size: 0.72rem;
-    line-height: 1.55;
-    opacity: 0.07;
+    line-height: 1.6;
+    text-align: right;
   }
 
   .near {
     right: clamp(7rem, 20vw, 17rem);
+    opacity: 0.06;
+  }
+  .near .tile {
     font-size: 0.78rem;
-    line-height: 1.4;
+    line-height: 1.45;
     letter-spacing: 0.05em;
-    opacity: 0.05;
   }
 
-  /* On narrow screens the gutters vanish — fade the edge columns so they
-     never fight the centered content. */
   @media (max-width: 900px) {
     .left,
-    .right,
-    .near {
-      opacity: 0.035;
+    .right {
+      opacity: 0.04;
     }
     .near {
       display: none;
@@ -122,30 +141,48 @@ const near = Array.from({ length: 22 }, (_, i) => {
 </style>
 
 <script>
-  const layers = Array.from(
-    document.querySelectorAll<HTMLElement>('.bg-ascii [data-speed]')
-  ).map((el) => ({ el, speed: parseFloat(el.dataset.speed || '0') }));
+  interface Layer {
+    el: HTMLElement;
+    speed: number;
+    tileH: number;
+  }
 
-  const baseX = (el: HTMLElement) => (el.classList.contains('far') ? 'translateX(-50%) ' : '');
+  const layers: Layer[] = Array.from(
+    document.querySelectorAll<HTMLElement>('.bg-ascii .layer')
+  ).map((el) => ({ el, speed: parseFloat(el.dataset.speed || '0'), tileH: 1 }));
+
+  const measure = () => {
+    for (const l of layers) {
+      const tile = l.el.querySelector<HTMLElement>('.tile');
+      l.tileH = tile?.offsetHeight || 1;
+    }
+  };
 
   let ticking = false;
   const apply = () => {
     const y = window.scrollY;
-    for (const { el, speed } of layers) {
-      el.style.transform = `${baseX(el)}translate3d(0, ${(y * speed).toFixed(1)}px, 0)`;
+    for (const l of layers) {
+      // Wrap the offset within one tile so the column repeats forever.
+      const off = l.tileH > 0 ? (y * l.speed) % l.tileH : 0;
+      l.el.style.transform = `translate3d(0, ${(-off).toFixed(1)}px, 0)`;
     }
     ticking = false;
   };
 
-  window.addEventListener(
-    'scroll',
-    () => {
-      if (!ticking) {
-        ticking = true;
-        requestAnimationFrame(apply);
-      }
-    },
-    { passive: true }
-  );
+  const onScroll = () => {
+    if (!ticking) {
+      ticking = true;
+      requestAnimationFrame(apply);
+    }
+  };
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', () => {
+    measure();
+    apply();
+  });
+  // Fonts can change metrics after load; re-measure once ready.
+  measure();
   apply();
+  if (document.fonts?.ready) document.fonts.ready.then(() => { measure(); apply(); });
 </script>
