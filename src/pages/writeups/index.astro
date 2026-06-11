@@ -19,7 +19,7 @@ const writeups = (await getCollection('writeups', ({ data }) => !data.draft)).so
         {
           writeups.map((w) => (
             <li data-reveal>
-              <a class="entry" href={`/writeups/${w.id}`}>
+              <a class="entry" href={`/writeups/${w.id}/`}>
                 <p class="date mono">
                   {w.data.pubDate.toLocaleDateString('en-GB', {
                     day: '2-digit',

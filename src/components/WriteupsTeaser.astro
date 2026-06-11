@@ -13,7 +13,7 @@ const writeups = (await getCollection('writeups', ({ data }) => !data.draft))
     <div class="grid">
       {
         writeups.map((w) => (
-          <a class="card" href={`/writeups/${w.id}`} data-reveal>
+          <a class="card" href={`/writeups/${w.id}/`} data-reveal>
             <p class="date mono">
               {w.data.pubDate.toLocaleDateString('en-GB', {
                 year: 'numeric',
@@ -28,7 +28,7 @@ const writeups = (await getCollection('writeups', ({ data }) => !data.draft))
       }
     </div>
     <p class="all mono" data-reveal>
-      <a class="link" href="/writeups">all writeups &rarr;</a>
+      <a class="link" href="/writeups/">all writeups &rarr;</a>
     </p>
   </div>
 </section>

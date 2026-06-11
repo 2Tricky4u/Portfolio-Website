@@ -41,8 +41,10 @@ export default defineConfig({
   site: 'https://www.xavierogay.ch',
   integrations: [mdx(), sitemap()],
   redirects: {
-    '/writeups.html': '/writeups',
-    '/blog/post1': '/writeups/practical-binary-analysis-ch1',
+    // Trailing slashes matter: the generated /writeups.html stub shadows the
+    // bare /writeups path, so the target must be /writeups/ to avoid a loop.
+    '/writeups.html': '/writeups/',
+    '/blog/post1': '/writeups/practical-binary-analysis-ch1/',
   },
   markdown: {
     shikiConfig: {
