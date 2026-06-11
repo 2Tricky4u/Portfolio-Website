@@ -29,4 +29,4 @@ Accesses the analysis proves in-bounds need no instrumentation; for the rest, th
 
 ## Results
 
-The framework was evaluated on real-world computation kernels, demonstrating that a large share of naive bounds checks can be eliminated while preserving full memory safety. The full write-up is in the thesis; the [slide deck](/doc/MP_slides.pdf) gives a condensed overview.
+The framework was evaluated on real-world computation kernels, demonstrating that a large share of naive bounds checks can be eliminated while preserving full memory safety. The [full thesis](/doc/Master_Thesis.pdf) has the details; the [slide deck](/doc/MP_slides.pdf) gives a condensed overview.
