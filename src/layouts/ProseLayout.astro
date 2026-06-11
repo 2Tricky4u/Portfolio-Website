@@ -189,20 +189,47 @@ const {
     padding: 0.4rem 0.8rem;
   }
 
-  /* Writeups read like a blog post: roomier column, larger body & code. */
+  /* Writeups read like a blog post: roomier column, larger body & code,
+     and generous vertical spacing so the text never feels tight. */
   .is-writeup .prose-container {
-    max-width: 46rem;
+    max-width: 48rem;
   }
 
   .is-writeup .prose {
     font-size: 1.05rem;
-    line-height: 1.75;
+    line-height: 1.85;
   }
 
   .is-writeup .prose :global(p),
   .is-writeup .prose :global(li) {
     font-size: 1.05rem;
-    line-height: 1.75;
+    line-height: 1.85;
+  }
+
+  .is-writeup .prose :global(p) {
+    margin-bottom: var(--space-4);
+  }
+
+  .is-writeup .prose :global(ul),
+  .is-writeup .prose :global(ol) {
+    margin-bottom: var(--space-4);
+    padding-left: 1.6rem;
+  }
+
+  .is-writeup .prose :global(li) {
+    margin-bottom: var(--space-3);
+  }
+
+  .is-writeup .prose :global(li)::marker {
+    color: var(--red);
+  }
+
+  .is-writeup .prose :global(h2) {
+    margin-top: var(--space-7);
+  }
+
+  .is-writeup .prose :global(h3) {
+    margin-top: var(--space-6);
   }
 
   .is-writeup .prose :global(pre) {

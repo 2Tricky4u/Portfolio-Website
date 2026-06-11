@@ -125,6 +125,41 @@
     color: var(--red);
   }
 
+  /* Output colour palette (used by neofetch, games, listings, …). */
+  #terminal :global(.t-red) {
+    color: #e06c75;
+  }
+  #terminal :global(.t-green) {
+    color: #27c93f;
+  }
+  #terminal :global(.t-cyan) {
+    color: #4ec9b0;
+  }
+  #terminal :global(.t-yellow) {
+    color: #dcdcaa;
+  }
+  #terminal :global(.t-blue) {
+    color: #61afef;
+  }
+  #terminal :global(.t-magenta) {
+    color: #c678dd;
+  }
+  #terminal :global(.t-dim) {
+    color: var(--text-faint);
+  }
+  #terminal :global(.t-bold) {
+    color: var(--text);
+    font-weight: 600;
+  }
+  #terminal :global(a) {
+    color: #4ec9b0;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  #terminal :global(a:hover) {
+    color: var(--red);
+  }
+
   .term-line {
     display: flex;
     gap: 0.5em;
