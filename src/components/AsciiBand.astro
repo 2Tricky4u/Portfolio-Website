@@ -1,0 +1,104 @@
+---
+/* Scroll-scrubbed ASCII ticker band — a section "headband". Its position is a
+   pure function of scrollY, so it moves exactly in sync with scrolling (and
+   reverses with scroll direction). Tiled 3× and wrapped with modulo for a
+   seamless infinite loop. Decorative only (aria-hidden). */
+
+interface Props {
+  tokens: string[];
+  dir?: 1 | -1;
+}
+
+const { tokens, dir = 1 } = Astro.props;
+const line = tokens.join('  ──  ') + '  ──  ';
+---
+
+<div class="ascii-band" data-dir={dir} aria-hidden="true">
+  <div class="track mono">
+    <span class="chunk">{line}</span>
+    <span class="chunk">{line}</span>
+    <span class="chunk">{line}</span>
+  </div>
+</div>
+
+<style>
+  .ascii-band {
+    overflow: hidden;
+    white-space: nowrap;
+    border-block: 1px solid var(--border);
+    background: rgba(236, 28, 36, 0.025);
+    padding-block: 0.8rem;
+    user-select: none;
+    /* fade out at the edges */
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+
+  .track {
+    display: inline-block;
+    font-size: var(--text-xs);
+    letter-spacing: 0.08em;
+    color: var(--red-soft);
+    opacity: 0.42;
+    will-change: transform;
+  }
+
+  .chunk {
+    display: inline-block;
+  }
+</style>
+
+<script>
+  interface Band {
+    track: HTMLElement;
+    chunk: HTMLElement;
+    dir: number;
+    w: number;
+  }
+
+  const bands: Band[] = Array.from(document.querySelectorAll<HTMLElement>('.ascii-band')).map(
+    (el) => ({
+      track: el.querySelector<HTMLElement>('.track')!,
+      chunk: el.querySelector<HTMLElement>('.chunk')!,
+      dir: Number(el.dataset.dir) || 1,
+      w: 0,
+    })
+  );
+
+  if (bands.length > 0) {
+    /* Position is a pure function of scrollY — no idle drift. Scroll down and
+       the band advances; scroll up and it rewinds. Runs regardless of
+       prefers-reduced-motion since all movement is user-driven scroll. */
+    const update = () => {
+      const y = window.scrollY;
+      for (const b of bands) {
+        if (b.w <= 0) continue;
+        const x = y * 0.65 * b.dir;
+        const off = ((x % b.w) + b.w) % b.w;
+        b.track.style.transform = `translate3d(${-off}px, 0, 0)`;
+      }
+    };
+
+    const measure = () => {
+      for (const b of bands) b.w = b.chunk.getBoundingClientRect().width;
+      update();
+    };
+    measure();
+    document.fonts?.ready.then(measure);
+    window.addEventListener('resize', measure, { passive: true });
+
+    let ticking = false;
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          ticking = false;
+          update();
+        });
+      },
+      { passive: true }
+    );
+  }
+</script>

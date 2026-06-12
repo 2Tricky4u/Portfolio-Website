@@ -6,13 +6,47 @@ import FeaturedProjects from '../components/FeaturedProjects.astro';
 import ProjectArchive from '../components/ProjectArchive.astro';
 import WriteupsTeaser from '../components/WriteupsTeaser.astro';
 import Contact from '../components/Contact.astro';
+import AsciiBand from '../components/AsciiBand.astro';
+import ScanFx from '../components/ScanFx.astro';
+
+const asmTokens = [
+  '7f 45 4c 46',
+  '.text',
+  'push rbp',
+  'mov rbp, rsp',
+  'xor eax, eax',
+  'lea rsi, [rip+0xbeef]',
+  'call 0x401040',
+  '.got.plt',
+  'pop rdi',
+  'ret',
+  'syscall',
+  '.rodata',
+  'nop',
+];
+
+const shellTokens = [
+  '$ nmap -sV --top-ports 1000',
+  '22/tcp open ssh',
+  '$ gdb -q ./target',
+  'b *main+42',
+  '$ objdump -d -M intel',
+  '$ strings | grep flag',
+  '0xdeadbeef',
+  '$ python3 exploit.py',
+  '[+] shell spawned',
+  'uid=0(root)',
+];
 ---
 
 <BaseLayout title="Xavier Ogay — Cybersecurity Engineer">
   <Hero />
   <Timeline />
+  <AsciiBand tokens={asmTokens} />
   <FeaturedProjects />
   <ProjectArchive />
   <WriteupsTeaser />
+  <AsciiBand tokens={shellTokens} dir={-1} />
   <Contact />
+  <ScanFx />
 </BaseLayout>

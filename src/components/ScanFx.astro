@@ -1,0 +1,129 @@
+---
+/* Section scanner sweep — a faint red light beam sweeps across a section the
+   first time it scrolls into view (alternating direction per fire). The beam
+   is rendered inside a clipping overlay on the section itself, so it is cut
+   exactly at the section's bounds and reads as part of the page. Purely
+   decorative; overlays are created on demand and removed when done. */
+---
+
+<script>
+  const TARGETS = ['#projects', '#contact'];
+  const COOLDOWN_MS = 6000;
+  const lastFired = new Map<Element, number>();
+  let fired = 0;
+
+  function sweep(section: HTMLElement, leftToRight: boolean): void {
+    if (getComputedStyle(section).position === 'static') {
+      section.style.position = 'relative';
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'scan-overlay';
+    overlay.setAttribute('aria-hidden', 'true');
+
+    const beam = document.createElement('div');
+    beam.className = `scan-beam ${leftToRight ? 'ltr' : 'rtl'}`;
+    const tag = document.createElement('span');
+    tag.className = 'scan-tag mono';
+    tag.textContent = 'scanning';
+    beam.appendChild(tag);
+    overlay.appendChild(beam);
+    section.appendChild(overlay);
+
+    /* Animated via the Web Animations API (not a CSS animation) so the global
+       reduced-motion rule that zeroes animation-duration can't kill it — the
+       sweep is an explicit design feature, not ambient motion. */
+    const w = overlay.clientWidth;
+    const pad = 200; // start/end fully outside, haze included
+    const from = leftToRight ? -pad : w + pad;
+    const to = leftToRight ? w + pad : -pad;
+    const anim = beam.animate(
+      [{ transform: `translateX(${from}px)` }, { transform: `translateX(${to}px)` }],
+      { duration: 1400, easing: 'cubic-bezier(0.45, 0.05, 0.35, 1)', fill: 'forwards' }
+    );
+    anim.onfinish = () => overlay.remove();
+  }
+
+  /* Fires when a target's top crosses ~2/3 of the viewport, re-arming each
+     time the section re-enters (with a cooldown so lingering at the boundary
+     doesn't spam). */
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        const now = performance.now();
+        if (now - (lastFired.get(e.target) ?? -Infinity) < COOLDOWN_MS) continue;
+        lastFired.set(e.target, now);
+        sweep(e.target as HTMLElement, fired % 2 === 0);
+        fired++;
+      }
+    },
+    { threshold: 0, rootMargin: '0px 0px -35% 0px' }
+  );
+
+  for (const sel of TARGETS) {
+    const el = document.querySelector(sel);
+    if (el) io.observe(el);
+  }
+</script>
+
+<style is:global>
+  .scan-overlay {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .scan-beam {
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 1px;
+    background: linear-gradient(
+      180deg,
+      transparent,
+      rgba(236, 28, 36, 0.35) 18%,
+      rgba(236, 28, 36, 0.35) 82%,
+      transparent
+    );
+    box-shadow: 0 0 12px 2px rgba(236, 28, 36, 0.18);
+  }
+
+  /* trailing haze behind the beam */
+  .scan-beam.ltr::after,
+  .scan-beam.rtl::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    width: 180px;
+  }
+
+  .scan-beam.ltr::after {
+    right: 1px;
+    background: linear-gradient(90deg, transparent, rgba(236, 28, 36, 0.045));
+  }
+
+  .scan-beam.rtl::after {
+    left: 1px;
+    background: linear-gradient(270deg, transparent, rgba(236, 28, 36, 0.045));
+  }
+
+  .scan-tag {
+    position: absolute;
+    top: 1.25rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: rgba(236, 28, 36, 0.4);
+    text-transform: uppercase;
+  }
+
+  .scan-beam.ltr .scan-tag {
+    left: 0.5rem;
+  }
+
+  .scan-beam.rtl .scan-tag {
+    right: 0.5rem;
+  }
+</style>
