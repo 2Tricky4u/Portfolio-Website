@@ -1,6 +1,6 @@
 ---
 title: WebGL Toon Shading Engine
-summary: An interactive non-photorealistic rendering engine in WebGL — quantized Blinn-Phong lighting, hue modulation, and dynamic outlines via multi-pass buffers, demoed on an animated Blender scene.
+summary: An interactive non-photorealistic rendering engine in WebGL with quantized Blinn-Phong lighting, hue modulation, and dynamic outlines via multi-pass buffers, demoed on an animated Blender scene.
 period: '2023'
 org: EPFL · Computer Graphics
 tags: [WebGL, GLSL, JavaScript, Rendering]

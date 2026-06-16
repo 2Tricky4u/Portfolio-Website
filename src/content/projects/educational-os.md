@@ -1,6 +1,6 @@
 ---
 title: Educational JOS-like Operating System
-summary: A JOS-inspired teaching OS with process isolation, virtual memory, preemptive multitasking, a file system, and syscall handling — bare-metal x86 in C, debugged with gdb.
+summary: A JOS-inspired teaching OS with process isolation, virtual memory, preemptive multitasking, a file system, and syscall handling. Bare-metal x86 in C, debugged with gdb.
 period: '2023'
 org: EPFL
 tags: [C, x86, Kernel, Virtual Memory]

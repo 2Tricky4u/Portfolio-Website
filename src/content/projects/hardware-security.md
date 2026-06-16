@@ -1,5 +1,5 @@
 ---
-title: Hardware Security Attacks — AnC, Meltdown, RetBleed, Rowhammer
+title: 'Hardware Security Attacks: AnC, Meltdown, RetBleed, Rowhammer'
 summary: Implemented real-world microarchitectural and DRAM attacks end to end, from cache side-channel reconnaissance to cross-boundary memory leaks and bit flips.
 period: Fall 2024
 org: ETH Zürich · Hardware Security
@@ -13,16 +13,16 @@ links:
 
 ## Context
 
-Modern CPUs and DRAM trade isolation guarantees for performance, and a decade of research has shown those trade-offs are exploitable. In ETH Zürich's Hardware Security course, the labs reproduce the landmark attacks of that line of research — not as toy demos, but as working exploits against real hardware.
+Modern CPUs and DRAM trade isolation guarantees for performance, and a decade of research has shown those trade-offs are exploitable. In ETH Zürich's Hardware Security course, the labs reproduce the landmark attacks of that line of research, not as toy demos but as working exploits against real hardware.
 
 ## Approach
 
 I implemented the full attack chain for several major classes of hardware vulnerabilities:
 
-- **AnC** — using cache side channels against the MMU's page-table walk to derandomize ASLR from unprivileged code.
-- **Meltdown** — leaking kernel memory across the user/kernel boundary via out-of-order execution and a cache covert channel.
-- **RetBleed** — exploiting return-instruction speculation to leak memory across privilege boundaries on mitigated CPUs.
-- **Rowhammer** — inducing DRAM bit flips through targeted row activation patterns and turning physical-reliability faults into a security primitive.
+- **AnC.** Using cache side channels against the MMU's page-table walk to derandomize ASLR from unprivileged code.
+- **Meltdown.** Leaking kernel memory across the user/kernel boundary via out-of-order execution and a cache covert channel.
+- **RetBleed.** Exploiting return-instruction speculation to leak memory across privilege boundaries on mitigated CPUs.
+- **Rowhammer.** Inducing DRAM bit flips through targeted row activation patterns and turning physical-reliability faults into a security primitive.
 
 Each attack required careful microarchitectural reasoning: timer construction, eviction-set building, speculation-window tuning, and physical-memory massaging.
 

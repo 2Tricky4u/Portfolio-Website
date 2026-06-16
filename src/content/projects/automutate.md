@@ -13,17 +13,17 @@ links:
 
 ## Context
 
-Endpoint Detection and Response (EDR) products are the front line of enterprise defense, but *what exactly* triggers their detections is opaque — both to defenders tuning them and to researchers evaluating them. Understanding which artifact features a detection hinges on usually requires slow, manual trial and error.
+Endpoint Detection and Response (EDR) products are the front line of enterprise defense, but *what exactly* triggers their detections is opaque, both to defenders tuning them and to researchers evaluating them. Understanding which artifact features a detection hinges on usually requires slow, manual trial and error.
 
-AutoMutate++ — my Master's thesis, carried out in industry at armasuisse's Cyber-Defence Campus (CYD) — automates that process: it systematically mutates a software artifact and observes which mutations flip the verdict of real EDR products, localizing the features detections depend on.
+AutoMutate++, my Master's thesis carried out in industry at armasuisse's Cyber-Defence Campus (CYD), automates that process: it systematically mutates a software artifact and observes which mutations flip the verdict of real EDR products, localizing the features detections depend on.
 
 ## Approach
 
 The framework, written in Rust, runs a closed feedback loop:
 
-- **Multi-layer mutation** — transformations are applied at three levels of the toolchain: source AST (via tree-sitter), LLVM IR, and the final PE binary, covering syntactic, structural, and binary-level features.
-- **Differential testing** — each mutant is evaluated against multiple EDRs (Windows Defender, Microsoft Defender for Endpoint, Cortex XDR), so verdict differences isolate product-specific detection logic.
-- **Token-driven feedback scoring** — detection feedback drives the next round of mutations, steering the search toward the minimal change that alters the verdict.
+- **Multi-layer mutation.** Transformations are applied at three levels of the toolchain: source AST (via tree-sitter), LLVM IR, and the final PE binary, covering syntactic, structural, and binary-level features.
+- **Differential testing.** Each mutant is evaluated against multiple EDRs (Windows Defender, Microsoft Defender for Endpoint, Cortex XDR), so verdict differences isolate product-specific detection logic.
+- **Token-driven feedback scoring.** Detection feedback drives the next round of mutations, steering the search toward the minimal change that alters the verdict.
 
 ## Results
 

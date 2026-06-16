@@ -1,6 +1,6 @@
 ---
 title: 'BowSteroid: NDS Game'
-summary: A Nintendo DS game in C — pilot a spaceship lost in space and survive randomly spawning asteroids by dodging or destroying them.
+summary: A Nintendo DS game in C, where you pilot a spaceship lost in space and survive randomly spawning asteroids by dodging or destroying them.
 period: '2022'
 org: EPFL · Embedded Systems
 tags: [C, Nintendo DS, Embedded]

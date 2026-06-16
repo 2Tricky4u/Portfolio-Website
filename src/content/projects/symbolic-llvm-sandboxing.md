@@ -15,7 +15,7 @@ links:
 
 WebAssembly is increasingly used as an execution layer for smart contracts, where a single memory-safety bug can be catastrophic and execution must remain strictly deterministic. Conventional sandboxing approaches insert bounds checks on every memory access, paying a heavy runtime cost even when most accesses are provably safe.
 
-This research project asks: how many of those checks can a compiler *prove away* — and how cheap can the remaining ones be made?
+This research project asks how many of those checks a compiler can *prove away*, and how cheap the remaining ones can be made.
 
 ## Approach
 

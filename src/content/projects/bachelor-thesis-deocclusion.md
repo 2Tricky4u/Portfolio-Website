@@ -13,7 +13,7 @@ links:
 
 ## Context
 
-Drone video is a rich data source for urban traffic research, but vehicle detection accuracy degrades sharply when vehicles are partially occluded — by trees, buildings, bridges, or each other. Missed and misclassified vehicles propagate as noise into every downstream analysis.
+Drone video is a rich data source for urban traffic research, but vehicle detection accuracy degrades sharply when vehicles are partially occluded by trees, buildings, bridges, or each other. Missed and misclassified vehicles propagate as noise into every downstream analysis.
 
 My Bachelor thesis investigated whether image inpainting can recover occluded vehicle regions well enough to improve detection and data reliability.
 

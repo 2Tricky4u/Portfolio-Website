@@ -1,6 +1,6 @@
 ---
-title: 'Practical Binary Analysis — Ch. 1: Anatomy of a Binary'
-description: 'Notes and solved exercises on the GCC compilation pipeline, ELF sections vs segments, the loading process, and what survives stripping — from Dennis Andriesse''s Practical Binary Analysis.'
+title: 'Practical Binary Analysis, Ch. 1: Anatomy of a Binary'
+description: 'Notes and solved exercises on the GCC compilation pipeline, ELF sections vs segments, the loading process, and what survives stripping, from Dennis Andriesse''s Practical Binary Analysis.'
 pubDate: 2024-07-12
 updatedDate: 2026-06-09
 tags: [binary-analysis, ELF, reverse-engineering]
@@ -49,34 +49,34 @@ strip --strip-all <file>     # remove .symtab/.strtab  (runtime keeps .dynsym)
 
 ## Preprocessing
 
-`cpp` expands `#include`, `#define`, and conditionals into a single translation unit of pure C — no directives remain in the output. Token pasting (`##`), stringification (`#`), and predefined macros (`__FILE__`, `__LINE__`, `__COUNTER__`) are resolved here, before any type-checking or code generation occurs.
+`cpp` expands `#include`, `#define`, and conditionals into a single translation unit of pure C, with no directives left in the output. Token pasting (`##`), stringification (`#`), and predefined macros (`__FILE__`, `__LINE__`, `__COUNTER__`) are resolved here, before any type-checking or code generation occurs.
 
 ## Compilation
 
-GCC lowers the translation unit through its internal IR (**GIMPLE → RTL**) to architecture-specific assembly. The optimization level is the critical variable for reverse engineering: `-O0` emits a nearly 1:1 mapping to the C source — every variable on the stack, every expression a separate instruction. From `-O2` up, the compiler inlines aggressively, eliminates dead branches, unrolls loops, and can merge or reorder functions entirely, breaking the structural correspondence you'd expect. Symbolic labels are still present in the `.s` output regardless of level.
+GCC lowers the translation unit through its internal IR (**GIMPLE → RTL**) to architecture-specific assembly. The optimization level is the critical variable for reverse engineering: `-O0` emits a nearly 1:1 mapping to the C source: every variable on the stack, every expression a separate instruction. From `-O2` up, the compiler inlines aggressively, eliminates dead branches, unrolls loops, and can merge or reorder functions entirely, breaking the structural correspondence you'd expect. Symbolic labels are still present in the `.s` output regardless of level.
 
 ## Assembly
 
-`as` translates mnemonics to opcodes and produces a **relocatable ELF object** (`.o`). External references have no resolved address yet — recorded as **relocation entries** in `.rela.text` (RELA on x86-64: offset + type + symbol + addend), pointing the linker at every site that needs patching. `file` reports the output as *ELF 64-bit LSB relocatable*; a shared library built with `-fPIC -shared` comes out as *shared object* — position-independent, no fixed load address.
+`as` translates mnemonics to opcodes and produces a **relocatable ELF object** (`.o`). External references have no resolved address yet; they are recorded as **relocation entries** in `.rela.text` (RELA on x86-64: offset + type + symbol + addend), pointing the linker at every site that needs patching. `file` reports the output as *ELF 64-bit LSB relocatable*; a shared library built with `-fPIC -shared` comes out as *shared object*, position-independent with no fixed load address.
 
 Key sections in a `.o`:
 
-- `.text` — executable code
-- `.data` — initialized globals; present in file, mapped **RW**
-- `.bss` — zero-initialized globals; no file space, kernel zero-fills on load
-- `.rodata` — string literals and const arrays; mapped **RO**, inspect with `objdump -sj .rodata`
-- `.symtab` / `.strtab` — full symbol table; stripped in release builds
-- `.dynsym` — export/import table for the dynamic linker; survives `strip --strip-all`
+- `.text`: executable code
+- `.data`: initialized globals; present in file, mapped **RW**
+- `.bss`: zero-initialized globals; no file space, kernel zero-fills on load
+- `.rodata`: string literals and const arrays; mapped **RO**, inspect with `objdump -sj .rodata`
+- `.symtab` / `.strtab`: full symbol table; stripped in release builds
+- `.dynsym`: export/import table for the dynamic linker; survives `strip --strip-all`
 
 ## Linking
 
 `ld` (invoked by `gcc`) consumes all `.o` files and library inputs, resolves every relocation entry, assigns final virtual addresses, and emits the executable ELF.
 
-<span class="link-type">Static</span> (`-static`) — merges all `.text` / `.data` / … sections from `.o` files and `.a` archives, resolves all relocations to absolute addresses. Fully self-contained — no `PT_INTERP`, no PLT indirection, direct calls. Larger binary (carries full libc), but no runtime dependency surprises; preferred for forensics and sandboxed environments.
+<span class="link-type">Static</span> (`-static`) merges all `.text` / `.data` / … sections from `.o` files and `.a` archives, resolving all relocations to absolute addresses. It is fully self-contained, with no `PT_INTERP`, no PLT indirection, and direct calls. The binary is larger (it carries full libc), but there are no runtime dependency surprises; preferred for forensics and sandboxed environments.
 
-<span class="link-type">Dynamic</span> (default) — external symbols stay `UNDEF` in `.dynsym`. A `PT_INTERP` segment names the runtime linker (`/lib64/ld-linux-x86-64.so.2`), which maps the needed `.so`s and resolves symbols at load time — or lazily on first call via **PLT/GOT**: each external call goes through a PLT stub that on first invocation falls through to the resolver, patches the GOT entry with the real address; subsequent calls jump through the GOT directly.
+<span class="link-type">Dynamic</span> (default) leaves external symbols as `UNDEF` in `.dynsym`. A `PT_INTERP` segment names the runtime linker (`/lib64/ld-linux-x86-64.so.2`), which maps the needed `.so`s and resolves symbols at load time, or lazily on first call via **PLT/GOT**: each external call goes through a PLT stub that on first invocation falls through to the resolver, patches the GOT entry with the real address; subsequent calls jump through the GOT directly.
 
-<span class="link-type">LTO</span> (`-flto`) — defers optimization to link time. GCC stores GIMPLE IR in object files instead of machine code; `ld` then runs a second optimization pass across all translation units simultaneously, enabling cross-TU inlining and dead function elimination. From a RE perspective, LTO-built binaries have no function-level correspondence to source files, and aggressively inlined code makes CFG reconstruction significantly harder.
+<span class="link-type">LTO</span> (`-flto`) defers optimization to link time. GCC stores GIMPLE IR in object files instead of machine code; `ld` then runs a second optimization pass across all translation units simultaneously, enabling cross-TU inlining and dead function elimination. From a RE perspective, LTO-built binaries have no function-level correspondence to source files, and aggressively inlined code makes CFG reconstruction significantly harder.
 
 <TerminalBlock label="linking / runtime">
 ```bash
@@ -88,34 +88,34 @@ strip --strip-all ./binary            # remove .symtab/.strtab  (keeps .dynsym)
 ```
 </TerminalBlock>
 
-After `strip --strip-all`, function names and local symbols are gone — only the exports and imports the dynamic linker depends on remain. CFG recovery falls back to heuristics: function prologue patterns, cross-reference analysis, and section boundary detection.
+After `strip --strip-all`, function names and local symbols are gone; only the exports and imports the dynamic linker depends on remain. CFG recovery falls back to heuristics: function prologue patterns, cross-reference analysis, and section boundary detection.
 
 ## Debug info
 
-**ELF + DWARF** — debug info embedded directly as dedicated sections (`.debug_info`, `.debug_line`, `.debug_abbrev`, …). `strip --strip-debug` removes these without touching the symbol table; `strip --strip-all` removes both. Shipped ELF binaries are typically fully stripped.
+**ELF + DWARF.** Debug info is embedded directly as dedicated sections (`.debug_info`, `.debug_line`, `.debug_abbrev`, …). `strip --strip-debug` removes these without touching the symbol table; `strip --strip-all` removes both. Shipped ELF binaries are typically fully stripped.
 
-**PE + PDB** — Windows uses a *separate* PDB (Program Database) file linked to the binary via a GUID in `IMAGE_DEBUG_DIRECTORY`. The binary carries almost no debug info itself — the PDB is rarely shipped, making it absent for most RE work unless indexed by a symbol server (`symsrv`).
+**PE + PDB.** Windows uses a *separate* PDB (Program Database) file linked to the binary via a GUID in `IMAGE_DEBUG_DIRECTORY`. The binary carries almost no debug info itself, and the PDB is rarely shipped, making it absent for most RE work unless indexed by a symbol server (`symsrv`).
 
 ## ELF loading
 
-Linking produces a file on disk. Loading turns it into a live process — a choreography across three actors: the **kernel** (parses ELF, creates the initial address space), the **dynamic linker** (`ld.so` — `/lib64/ld-linux-x86-64.so.2`, a position-independent shared library that bootstraps the runtime before any user code runs), and **libc** — the standard C library (`libc.so.6`) providing `malloc`, `printf`, `exit`, and the startup/shutdown scaffolding every C program depends on.
+Linking produces a file on disk. Loading turns it into a live process, a choreography across three actors: the **kernel** (parses ELF, creates the initial address space), the **dynamic linker** (`ld.so`, at `/lib64/ld-linux-x86-64.so.2`, a position-independent shared library that bootstraps the runtime before any user code runs), and **libc**, the standard C library (`libc.so.6`) providing `malloc`, `printf`, `exit`, and the startup/shutdown scaffolding every C program depends on.
 
-**fork + execve —** The shell calls `fork()` to clone itself, then `execve(path, argv, envp)` in the child. The kernel's `do_execve` handler tears down the existing address space and begins constructing a new one from the binary on disk.
+**fork + execve.** The shell calls `fork()` to clone itself, then `execve(path, argv, envp)` in the child. The kernel's `do_execve` handler tears down the existing address space and begins constructing a new one from the binary on disk.
 
-**Kernel reads ELF header —** The 64-byte ELF header supplies everything needed: magic bytes (`\x7fELF`), `e_type` (`ET_EXEC` for a fixed-address executable, `ET_DYN` for a PIE), `e_machine` (`EM_X86_64`), and `e_phoff` — the file offset to the program header table listing all `PT_*` entries.
+**Kernel reads ELF header.** The 64-byte ELF header supplies everything needed: magic bytes (`\x7fELF`), `e_type` (`ET_EXEC` for a fixed-address executable, `ET_DYN` for a PIE), `e_machine` (`EM_X86_64`), and `e_phoff`, the file offset to the program header table listing all `PT_*` entries.
 
-**Kernel maps PT_LOAD segments —** For each `PT_LOAD` entry the kernel issues an `mmap()`: the file range is mapped at the specified virtual address with permissions matching the segment flags (R-X for code, RW- for data). Demand-paged — no physical I/O until first access triggers a page fault.
+**Kernel maps PT_LOAD segments.** For each `PT_LOAD` entry the kernel issues an `mmap()`: the file range is mapped at the specified virtual address with permissions matching the segment flags (R-X for code, RW- for data). It is demand-paged, so there is no physical I/O until the first access triggers a page fault.
 
-**Kernel maps ld.so from PT_INTERP —** If a `PT_INTERP` segment is present (every dynamically linked binary has one), the kernel reads the interpreter path it contains (`/lib64/ld-linux-x86-64.so.2`), opens that file, and maps its own `PT_LOAD` segments at a fresh ASLR base address. `ld.so` is itself a PIE — it runs fully position-independent and must *self-relocate* before it can call any of its own functions.
+**Kernel maps ld.so from PT_INTERP.** If a `PT_INTERP` segment is present (every dynamically linked binary has one), the kernel reads the interpreter path it contains (`/lib64/ld-linux-x86-64.so.2`), opens that file, and maps its own `PT_LOAD` segments at a fresh ASLR base address. `ld.so` is itself a PIE, so it runs fully position-independent and must *self-relocate* before it can call any of its own functions.
 
-**Kernel prepares the initial stack —** Before handing over control, the kernel writes the initial stack frame: `argc`, `argv[]` and `envp[]` pointer arrays (each null-terminated), then the **auxiliary vector** — a sequence of `AT_*` key-value pairs that pass kernel-internal state to userspace without a syscall:
+**Kernel prepares the initial stack.** Before handing over control, the kernel writes the initial stack frame: `argc`, `argv[]` and `envp[]` pointer arrays (each null-terminated), then the **auxiliary vector**, a sequence of `AT_*` key-value pairs that pass kernel-internal state to userspace without a syscall:
 
-- `AT_PHDR` / `AT_PHNUM` — address and count of the main executable's program headers; lets `ld.so` locate `PT_DYNAMIC`
-- `AT_ENTRY` — the main executable's entry point (`_start`); where `ld.so` will jump at the very end
-- `AT_BASE` — `ld.so`'s own load base; needed for its self-relocation pass
-- `AT_RANDOM` — 16 kernel-generated random bytes; seeds the stack canary and glibc's ASLR offsets
+- `AT_PHDR` / `AT_PHNUM`: address and count of the main executable's program headers; lets `ld.so` locate `PT_DYNAMIC`
+- `AT_ENTRY`: the main executable's entry point (`_start`); where `ld.so` will jump at the very end
+- `AT_BASE`: `ld.so`'s own load base; needed for its self-relocation pass
+- `AT_RANDOM`: 16 kernel-generated random bytes; seeds the stack canary and glibc's ASLR offsets
 
-<TerminalBlock label="auxiliary vector — kernel → userspace channel">
+<TerminalBlock label="auxiliary vector: kernel to userspace channel">
 ```bash
 LD_SHOW_AUXV=1 ./a.out 2>/dev/null | grep -E "AT_PHDR|AT_PHNUM|AT_ENTRY|AT_BASE|AT_RANDOM|AT_PAGESZ|AT_INTERP"
 
@@ -123,7 +123,7 @@ AT_PAGESZ:   4096                  # memory page size (arch constant, no syscall
 AT_PHDR:     0x555555554040        # main executable program header table
 AT_PHNUM:    13                    # number of PT_* entries in that table
 AT_BASE:     0x7ffff7fc5000        # ld.so load base (ASLR randomised each exec)
-AT_ENTRY:    0x555555555050        # _start — ld.so jumps here after relocation
+AT_ENTRY:    0x555555555050        # _start, ld.so jumps here after relocation
 AT_RANDOM:   0x7fffffffde39        # 16 random bytes (stack canary seed)
 ```
 </TerminalBlock>
@@ -132,24 +132,24 @@ AT_RANDOM:   0x7fffffffde39        # 16 random bytes (stack canary seed)
   When the kernel jumps to `ld.so`'s entry, the process has no heap, no libc, no C runtime. `ld.so` locates itself via `AT_BASE`, applies its own relocations by walking its own GOT/PLT tables with hand-written assembly stubs, then only after that self-relocation pass can it call its own C functions. Everything needed to load libc is written to avoid depending on libc.
 </Callout>
 
-**Dynamic linker maps shared libraries —** `ld.so` reads the main executable's `PT_DYNAMIC` segment and walks its `DT_NEEDED` entries — each names a required shared object (`libc.so.6`, `libm.so.6`, …). It resolves paths through `DT_RUNPATH`, `LD_LIBRARY_PATH`, and `/etc/ld.so.cache`, then maps each library's `PT_LOAD` segments at ASLR-randomised addresses. The process is recursive — each newly loaded library may declare its own `DT_NEEDED` entries.
+**Dynamic linker maps shared libraries.** `ld.so` reads the main executable's `PT_DYNAMIC` segment and walks its `DT_NEEDED` entries, each of which names a required shared object (`libc.so.6`, `libm.so.6`, …). It resolves paths through `DT_RUNPATH`, `LD_LIBRARY_PATH`, and `/etc/ld.so.cache`, then maps each library's `PT_LOAD` segments at ASLR-randomised addresses. The process is recursive: each newly loaded library may declare its own `DT_NEEDED` entries.
 
-**Dynamic linker applies relocations —** With all libraries resident, `ld.so` processes the relocation tables (`.rela.dyn` / `.rela.plt`): for each entry, the target symbol is resolved across all loaded objects' `.dynsym` tables and the result is written into the target slot — GOT entries, absolute pointers in `.data`. After this pass, all eagerly-bound symbols are fully resolved; PLT entries are primed for lazy resolution on first call.
+**Dynamic linker applies relocations.** With all libraries resident, `ld.so` processes the relocation tables (`.rela.dyn` / `.rela.plt`): for each entry, the target symbol is resolved across all loaded objects' `.dynsym` tables and the result is written into the target slot, whether a GOT entry or an absolute pointer in `.data`. After this pass, all eagerly-bound symbols are fully resolved; PLT entries are primed for lazy resolution on first call.
 
-**Constructors — .init_array —** `ld.so` calls functions listed in `.init_array` in dependency order: library constructors first (TLS setup, libc internal init), then the executable's own. C functions annotated `__attribute__((constructor))` land here — they run before `main` with no explicit call in the source.
+**Constructors, `.init_array`.** `ld.so` calls functions listed in `.init_array` in dependency order: library constructors first (TLS setup, libc internal init), then the executable's own. C functions annotated `__attribute__((constructor))` land here, and they run before `main` with no explicit call in the source.
 
-**Dynamic linker jumps to _start —** `ld.so` reads `AT_ENTRY` from the auxiliary vector and transfers control to the main executable's entry point. This is `_start`, injected by the GCC linker script from `crt1.o` — it never appears in the C source.
+**Dynamic linker jumps to _start.** `ld.so` reads `AT_ENTRY` from the auxiliary vector and transfers control to the main executable's entry point. This is `_start`, injected by the GCC linker script from `crt1.o`, and it never appears in the C source.
 
-**_start → __libc_start_main —** `_start` zeroes `rbp` (marking the outermost stack frame for unwinders), extracts `argc`, `argv`, and `envp` from the initial stack layout, and calls `__libc_start_main(main, argc, argv, …)`. libc is already fully mapped and relocated — the call goes through the GOT like any other external symbol.
+**_start → __libc_start_main.** `_start` zeroes `rbp` (marking the outermost stack frame for unwinders), extracts `argc`, `argv`, and `envp` from the initial stack layout, and calls `__libc_start_main(main, argc, argv, …)`. libc is already fully mapped and relocated, so the call goes through the GOT like any other external symbol.
 
-**libc calls main —** `__libc_start_main` installs `atexit` handlers, runs any remaining init callbacks, then calls `main(argc, argv, envp)`. On return, `exit()` flushes stdio buffers, fires `atexit` callbacks, and issues the `exit_group(status)` syscall — terminating every thread in the process.
+**libc calls main.** `__libc_start_main` installs `atexit` handlers, runs any remaining init callbacks, then calls `main(argc, argv, envp)`. On return, `exit()` flushes stdio buffers, fires `atexit` callbacks, and issues the `exit_group(status)` syscall, terminating every thread in the process.
 
 <Callout title="ASLR and the PIE requirement" variant="amber">
-  Each field in the auxiliary vector carrying an address (`AT_PHDR`, `AT_BASE`, `AT_ENTRY`) will differ between runs when ASLR is active. For this to work, the main executable must be compiled as a PIE (`-fPIE -pie`, the GCC default since ~2016) so the kernel can place it at a random base rather than a fixed `0x400000`. A non-PIE executable has a hard-coded load address and opts out of ASLR for its own segments — visible in `e_type: ET_EXEC` vs `ET_DYN`.
+  Each field in the auxiliary vector carrying an address (`AT_PHDR`, `AT_BASE`, `AT_ENTRY`) will differ between runs when ASLR is active. For this to work, the main executable must be compiled as a PIE (`-fPIE -pie`, the GCC default since ~2016) so the kernel can place it at a random base rather than a fixed `0x400000`. A non-PIE executable has a hard-coded load address and opts out of ASLR for its own segments, visible in `e_type: ET_EXEC` vs `ET_DYN`.
 </Callout>
 
-<Callout title="Sections vs segments — the loading summary" variant="blue">
-  The full twelve-step process touches only `PT_LOAD`, `PT_INTERP`, `PT_DYNAMIC`, and `PT_PHDR` segments — never individual sections. `.symtab`, `.strtab`, and `.debug_*` are outside every `PT_LOAD` segment and are never mapped into memory at runtime. From the loader's perspective they do not exist.
+<Callout title="Sections vs segments: the loading summary" variant="blue">
+  The full twelve-step process touches only `PT_LOAD`, `PT_INTERP`, `PT_DYNAMIC`, and `PT_PHDR` segments, never individual sections. `.symtab`, `.strtab`, and `.debug_*` are outside every `PT_LOAD` segment and are never mapped into memory at runtime. From the loader's perspective they do not exist.
 </Callout>
 
 ## Exercises
@@ -187,11 +187,11 @@ strip --strip-all a.out -o a2.out        # → stripped copy
 ```
 </TerminalBlock>
 
-In the `.s` file, function names appear as plain assembly labels (`multiply:`, `divide:`, …) — they are source text. In the `.o`, they are symbol table entries; calls to external functions show address `0x0` with a relocation entry pointing the linker at the call site. In the linked binary, all relocations are resolved to final virtual addresses.
+In the `.s` file, function names appear as plain assembly labels (`multiply:`, `divide:`, …); they are source text. In the `.o`, they are symbol table entries; calls to external functions show address `0x0` with a relocation entry pointing the linker at the call site. In the linked binary, all relocations are resolved to final virtual addresses.
 
-**With symbols — a.out:**
+**With symbols (a.out):**
 
-<TerminalBlock label="objdump -M intel -d a.out — user functions">
+<TerminalBlock label="objdump -M intel -d a.out: user functions">
 ```asm
 0000000000001149 <multiply>:
     1149:  55                       push   rbp
@@ -226,17 +226,17 @@ In the `.s` file, function names appear as plain assembly labels (`multiply:`, `
 ```
 </TerminalBlock>
 
-<Callout title="SSE scalar float — SysV AMD64 ABI" variant="amber">
-  Float arguments are passed in `xmm0`, `xmm1` (not the integer registers rdi/rsi). Operations are scalar single-precision SSE: `movss` (move), `mulss` (multiply), `divss` (divide). At `-O0`, GCC spills every argument to the stack then reloads it — the four `movss` around `mulss` are pure overhead. From `-O1`+, the standalone symbol collapses to two instructions: `mulss xmm0, xmm1` / `ret` — no frame pointer, no stack. At `-O3`, call sites in the same translation unit are also inlined, so the standalone symbol may never be reached from `main` at all.
+<Callout title="SSE scalar float: SysV AMD64 ABI" variant="amber">
+  Float arguments are passed in `xmm0`, `xmm1` (not the integer registers rdi/rsi). Operations are scalar single-precision SSE: `movss` (move), `mulss` (multiply), `divss` (divide). At `-O0`, GCC spills every argument to the stack then reloads it, so the four `movss` around `mulss` are pure overhead. From `-O1`+, the standalone symbol collapses to two instructions (`mulss xmm0, xmm1` / `ret`) with no frame pointer and no stack. At `-O3`, call sites in the same translation unit are also inlined, so the standalone symbol may never be reached from `main` at all.
 </Callout>
 
 <Callout title="GCC printf → puts optimization" variant="blue">
-  Both `printf("%s\n", "hello!")` in `main` and `printf("%s\n", str)` in `show` compile to `puts@plt` calls — GCC recognizes a single `%s\n` with no other conversion as equivalent to `puts`, which appends the newline itself and avoids format-string parsing overhead. The final `printf("%f\n", c)` cannot be simplified and stays as `printf@plt`.
+  Both `printf("%s\n", "hello!")` in `main` and `printf("%s\n", str)` in `show` compile to `puts@plt` calls: GCC recognizes a single `%s\n` with no other conversion as equivalent to `puts`, which appends the newline itself and avoids format-string parsing overhead. The final `printf("%f\n", c)` cannot be simplified and stays as `printf@plt`.
 </Callout>
 
-<TerminalBlock label="gcc -O3 — what actually changes">
+<TerminalBlock label="gcc -O3: what actually changes">
 ```asm
-; multiply / divide: standalone stubs — 2 instructions, no frame, no spills
+; multiply / divide: standalone stubs, 2 instructions, no frame, no spills
 0000000000001190 <multiply>:
     1190:  f3 0f 59 c1   mulss  xmm0,xmm1
     1194:  c3            ret
@@ -245,11 +245,11 @@ In the `.s` file, function names appear as plain assembly labels (`multiply:`, `
     11a0:  f3 0f 5e c1   divss  xmm0,xmm1
     11a4:  c3            ret
 
-; show: tail call — the function body IS the jump to puts
+; show: tail call, the function body IS the jump to puts
 00000000000011b0 <show>:
     11b0:  e9 7b fe ff ff   jmp   1030 <puts@plt>
 
-; main: multiply / divide / show all inlined — arithmetic constant-folded to a single value
+; main: multiply / divide / show all inlined, arithmetic constant-folded to a single value
 0000000000001050 <main>:
     1050:  sub    rsp,0x8
     1054:  lea    rdi,[rip+0xfa9]               ; "hello!"
@@ -266,15 +266,15 @@ In the `.s` file, function names appear as plain assembly labels (`multiply:`, `
 ```
 </TerminalBlock>
 
-<Callout title="Constant folding — the entire arithmetic chain disappears" variant="amber">
-  `multiply(divide(4.0, 2.0), 5.0)` is fully evaluated at compile time: `4.0 / 2.0 = 2.0`, then `2.0 * 5.0 = 10.0`. The result is stored in `.rodata` as a `double` constant (single-precision result promoted to double for `printf`'s `%f` vararg convention). Neither `divide` nor `multiply` is called from `main` — their call sites ceased to exist. For RE: an arithmetic chain on literal constants leaves no trace in the optimized binary beyond the final precomputed value.
+<Callout title="Constant folding: the entire arithmetic chain disappears" variant="amber">
+  `multiply(divide(4.0, 2.0), 5.0)` is fully evaluated at compile time: `4.0 / 2.0 = 2.0`, then `2.0 * 5.0 = 10.0`. The result is stored in `.rodata` as a `double` constant (single-precision result promoted to double for `printf`'s `%f` vararg convention). Neither `divide` nor `multiply` is called from `main`; their call sites ceased to exist. For RE, an arithmetic chain on literal constants leaves no trace in the optimized binary beyond the final precomputed value.
 </Callout>
 
-<Callout title="Tail call optimization — show becomes a jump" variant="teal">
-  `show`'s only action is to call `puts` and return its result. Since no work happens after that call, GCC replaces `call puts / ret` with `jmp puts@plt`: `puts` returns directly to `show`'s caller, skipping the intermediate frame entirely. At the inline call site in `main`, `show("World")` becomes a direct `puts("World")` — the standalone symbol survives only for external callers from other translation units.
+<Callout title="Tail call optimization: show becomes a jump" variant="teal">
+  `show`'s only action is to call `puts` and return its result. Since no work happens after that call, GCC replaces `call puts / ret` with `jmp puts@plt`: `puts` returns directly to `show`'s caller, skipping the intermediate frame entirely. At the inline call site in `main`, `show("World")` becomes a direct `puts("World")`, and the standalone symbol survives only for external callers from other translation units.
 </Callout>
 
-<TerminalBlock label="PLT stub — puts@plt (lazy binding trampoline)">
+<TerminalBlock label="PLT stub: puts@plt (lazy binding trampoline)">
 ```asm
 0000000000001030 <puts@plt>:
     1030:  ff 25 ca 2f 00 00   jmp    QWORD PTR [rip+0x2fca]   ; jump through GOT slot
@@ -286,19 +286,19 @@ In the `.s` file, function names appear as plain assembly labels (`multiply:`, `
 ```
 </TerminalBlock>
 
-<Callout title="PLT/GOT — lazy binding" variant="teal">
-  `puts@plt` at `0x1030` is not `puts` — it is the trampoline. The `jmp [GOT]` on the first call lands back into the resolver stub (push + jmp to `0x1020`), which calls `ld.so` to look up the real address and write it into the GOT entry. Every subsequent call jumps through the now-patched GOT slot directly into libc. This is visible in objdump: external calls annotated as `@plt` — a sign the call goes through this indirection layer.
+<Callout title="PLT/GOT lazy binding" variant="teal">
+  `puts@plt` at `0x1030` is not `puts`; it is the trampoline. The `jmp [GOT]` on the first call lands back into the resolver stub (push + jmp to `0x1020`), which calls `ld.so` to look up the real address and write it into the GOT entry. Every subsequent call jumps through the now-patched GOT slot directly into libc. This is visible in objdump: external calls annotated as `@plt`, a sign the call goes through this indirection layer.
 </Callout>
 
-<Callout title="_start ≠ main — the real entry point" variant="red">
-  The binary's entry point is `_start` at `0x1050`, injected by the CRT linker script. It zero-initialises `rbp`, extracts `argc`/`argv` from the stack, and calls `__libc_start_main` (via GOT), which runs global constructors and eventually calls `main`. The `endbr64` prefix marks `_start` as a valid CET indirect-branch target — the dynamic linker jumps to it indirectly. User functions called only directly do not carry `endbr64`.
+<Callout title="_start ≠ main, the real entry point" variant="red">
+  The binary's entry point is `_start` at `0x1050`, injected by the CRT linker script. It zero-initialises `rbp`, extracts `argc`/`argv` from the stack, and calls `__libc_start_main` (via GOT), which runs global constructors and eventually calls `main`. The `endbr64` prefix marks `_start` as a valid CET indirect-branch target, since the dynamic linker jumps to it indirectly. User functions called only directly do not carry `endbr64`.
 </Callout>
 
-**Stripped — a2.out:**
+**Stripped (a2.out):**
 
-After `strip --strip-all`, the entire `.text` section becomes one anonymous blob. No function labels — only PLT entries (from `.dynsym`) and ELF section names survive. Calls that previously referenced named symbols now reference offsets relative to the nearest surviving symbol:
+After `strip --strip-all`, the entire `.text` section becomes one anonymous blob. There are no function labels; only PLT entries (from `.dynsym`) and ELF section names survive. Calls that previously referenced named symbols now reference offsets relative to the nearest surviving symbol:
 
-<TerminalBlock label="stripped — same opcodes, annotations lost">
+<TerminalBlock label="stripped: same opcodes, annotations lost">
 ```asm
 ; ── non-stripped ────────────────────────────────────
 0000000000001149 <multiply>:         ; function label present
@@ -314,12 +314,12 @@ After `strip --strip-all`, the entire `.text` section becomes one anonymous blob
     11eb:  e8 7d ff ff ff   call   116d <printf@plt+0x12d>   ; was: <divide>
     1200:  e8 44 ff ff ff   call   1149 <printf@plt+0x109>   ; was: <multiply>
 
-; opcodes are byte-for-byte identical — only the annotations differ
+; opcodes are byte-for-byte identical, only the annotations differ
 ```
 </TerminalBlock>
 
 <Callout title="Recovering function boundaries without symbols" variant="teal">
-  Machine code is identical — strip only removes metadata. Function starts are still recoverable from the standard prologue: `push rbp` / `mov rbp, rsp` appears at `0x1149`, `0x116d`, `0x1191`, `0x11ac` — exactly the four user functions. Ends are found at `ret` (`0x116c`, `0x1190`, `0x11ab`, `0x1239`). Automated disassemblers (Ghidra, IDA Pro) use exactly this heuristic — function prologue scanning plus cross-reference analysis from known call sites — to reconstruct the full call graph without a single symbol.
+  Machine code is identical; strip only removes metadata. Function starts are still recoverable from the standard prologue: `push rbp` / `mov rbp, rsp` appears at `0x1149`, `0x116d`, `0x1191`, `0x11ac`, exactly the four user functions. Ends are found at `ret` (`0x116c`, `0x1190`, `0x11ab`, `0x1239`). Automated disassemblers (Ghidra, IDA Pro) use exactly this heuristic, function prologue scanning plus cross-reference analysis from known call sites, to reconstruct the full call graph without a single symbol.
 </Callout>
 
 ### 2. Sections
@@ -330,19 +330,19 @@ After `strip --strip-all`, the entire `.text` section becomes one anonymous blob
 
 The core reason is **memory protection**. The CPU's MMU enforces per-page permission bits set by the OS: code pages are mapped **R-X** (read + execute, not writable), data pages **RW-** (read + write, not executable). Separating them into distinct sections lets the linker group them into ELF **segments** with matching permissions, which the loader then passes to `mmap()`.
 
-<Callout title="W^X — write XOR execute" variant="amber">
-  A page that is both writable and executable is a classic exploitation primitive: inject shellcode into a writable buffer, then jump to it. The hardware NX bit (AMD) / XD bit (Intel) enforces that executable pages cannot be written and vice versa. This is why `.text` is R-X and `.data` / `.bss` are RW- — mixing them into a single region would force the OS to grant both permissions to every page in it.
+<Callout title="W^X: write XOR execute" variant="amber">
+  A page that is both writable and executable is a classic exploitation primitive: inject shellcode into a writable buffer, then jump to it. The hardware NX bit (AMD) / XD bit (Intel) enforces that executable pages cannot be written and vice versa. This is why `.text` is R-X and `.data` / `.bss` are RW-: mixing them into a single region would force the OS to grant both permissions to every page in it.
 </Callout>
 
 <Callout title="Shared read-only code pages" variant="blue">
-  Because `.text` is read-only, the OS can back all processes that use the same shared library with the *same physical pages*. Every process running against `libc.so` maps its `.text` to the same physical frames — no duplication. `.data` is per-process: it starts as a shared COW mapping and gets a private copy the first time any page is written.
+  Because `.text` is read-only, the OS can back all processes that use the same shared library with the *same physical pages*. Every process running against `libc.so` maps its `.text` to the same physical frames, with no duplication. `.data` is per-process: it starts as a shared COW mapping and gets a private copy the first time any page is written.
 </Callout>
 
-**How loading differs — code vs data:**
+**How loading differs (code vs data):**
 
 The kernel ELF loader (`load_elf_binary`) and `ld.so` work with **segments** (program header entries), not sections. Each `PT_LOAD` segment groups sections of the same permission class and is mapped with a single `mmap()` call:
 
-<TerminalBlock label="readelf -l a.out — PT_LOAD segments">
+<TerminalBlock label="readelf -l a.out: PT_LOAD segments">
 ```bash
 Type    Offset   VirtAddr           FileSiz  MemSiz   Flg
 LOAD    0x001000 0x0000000000001000  0x000249 0x000249 R E   # code:  r-x
@@ -352,19 +352,19 @@ LOAD    0x002db0 0x0000000000003db0  0x000270 0x000278 RW    # data:  rw-
 ```
 </TerminalBlock>
 
-<Callout title="Demand paging — nothing is copied upfront" variant="teal">
-  Neither segment is physically loaded at `mmap()` time. The kernel establishes the virtual mapping and returns immediately. Pages are brought in from disk only on the first access that triggers a page fault — the fault handler reads the page from the file (or allocates a zero page for `.bss`) and resumes the faulting instruction transparently. A short-lived process that never touches a large `.rodata` table never pays the I/O cost for it.
+<Callout title="Demand paging: nothing is copied upfront" variant="teal">
+  Neither segment is physically loaded at `mmap()` time. The kernel establishes the virtual mapping and returns immediately. Pages are brought in from disk only on the first access that triggers a page fault: the fault handler reads the page from the file (or allocates a zero page for `.bss`) and resumes the faulting instruction transparently. A short-lived process that never touches a large `.rodata` table never pays the I/O cost for it.
 </Callout>
 
-<Callout title=".bss — SHT_NOBITS, zero cost in file" variant="red">
-  `.bss` has section type `SHT_NOBITS`: it occupies zero bytes in the file but contributes to the segment's `MemSiz`. The loader calls `mmap(MAP_ANONYMOUS)` for the extra pages and the kernel zero-fills them (guaranteed by POSIX). This is why a global `int arr[1000000]` costs nothing in binary size — it is pure address-space reservation, paid only in RAM if accessed.
+<Callout title=".bss: SHT_NOBITS, zero cost in file" variant="red">
+  `.bss` has section type `SHT_NOBITS`: it occupies zero bytes in the file but contributes to the segment's `MemSiz`. The loader calls `mmap(MAP_ANONYMOUS)` for the extra pages and the kernel zero-fills them (guaranteed by POSIX). This is why a global `int arr[1000000]` costs nothing in binary size; it is pure address-space reservation, paid only in RAM if accessed.
 </Callout>
 
 **Is it necessary to load all sections?**
 
-No — and the sections/segments split is precisely what makes this possible. **Sections** are the linker/debugger view of the file. **Segments** are the runtime view. Only sections that fall inside a `PT_LOAD` segment are ever mapped; everything else exists only on disk:
+No, and the sections/segments split is precisely what makes this possible. **Sections** are the linker/debugger view of the file. **Segments** are the runtime view. Only sections that fall inside a `PT_LOAD` segment are ever mapped; everything else exists only on disk:
 
-<TerminalBlock label="readelf -l a.out — section-to-segment mapping">
+<TerminalBlock label="readelf -l a.out: section-to-segment mapping">
 ```bash
 Section to Segment mapping:
   Segment  Sections
@@ -380,10 +380,10 @@ Section to Segment mapping:
 </TerminalBlock>
 
 <Callout title="What never reaches RAM" variant="teal">
-  `.symtab` / `.strtab` (full symbol table) and all `.debug_*` DWARF sections are not part of any `PT_LOAD` segment — the runtime linker never touches them. Stripping removes them from the file entirely, but even in an unstripped binary they sit on disk without consuming RAM. `.dynsym` and `.dynstr` on the other hand are inside a `PT_LOAD` segment and must be present at runtime for `ld.so` to resolve symbols. The distinction: what the linker needs vs what the dynamic loader needs.
+  `.symtab` / `.strtab` (full symbol table) and all `.debug_*` DWARF sections are not part of any `PT_LOAD` segment, so the runtime linker never touches them. Stripping removes them from the file entirely, but even in an unstripped binary they sit on disk without consuming RAM. `.dynsym` and `.dynstr` on the other hand are inside a `PT_LOAD` segment and must be present at runtime for `ld.so` to resolve symbols. The distinction: what the linker needs vs what the dynamic loader needs.
 </Callout>
 
-<TerminalBlock label="verify at runtime — /proc maps">
+<TerminalBlock label="verify at runtime: /proc maps">
 ```bash
 cat /proc/$(pidof binary)/maps
 # 555555555000-555555556000 r-xp  ...  a.out   ← .text mapped r-x
