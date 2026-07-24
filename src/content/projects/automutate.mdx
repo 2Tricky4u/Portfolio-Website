@@ -1,6 +1,6 @@
 ---
-title: 'AutoMutate++: Automated Artifact Mutation against AV/EDR'
-summary: A closed-loop EDR evaluation framework in Rust that mutates software artifacts across multiple layers and differentially tests them against Windows Defender, MDE, and Cortex XDR.
+title: 'AutoMutate++: Explaining AV/EDR Detection Through Controlled Mutation'
+summary: A Rust research framework that mutates software across the source, compiler IR, and binary layers, then uses differential telemetry to explain why endpoint detections change.
 period: '2026'
 org: armasuisse · Cyber-Defence Campus (CYD)
 tags: [Rust, EDR, LLVM, tree-sitter, Windows, Security Research]
@@ -11,20 +11,171 @@ links:
   github: https://github.com/2Tricky4u/Automated-Analysis-and-Mutation-of-Software-Artifacts-against-AV-EDR
 ---
 
-## Context
+import { Image } from 'astro:assets';
+import architecture from '../../assets/projects/automutate-system-architecture.png';
+import MetricGrid from '../../components/case/MetricGrid.astro';
+import FlowDiagram from '../../components/case/FlowDiagram.astro';
+import BarChart from '../../components/case/BarChart.astro';
 
-Endpoint Detection and Response (EDR) products are the front line of enterprise defense, but *what exactly* triggers their detections is opaque, both to defenders tuning them and to researchers evaluating them. Understanding which artifact features a detection hinges on usually requires slow, manual trial and error.
+**Across the repository's 180-round selector comparison, genetic search was the only strategy to produce successful classification changes, while coverage guidance delivered the most trustworthy executions. The central result was counter-intuitive: more mutation was not better.**
 
-AutoMutate++, my Master's thesis carried out in industry at armasuisse's Cyber-Defence Campus (CYD), automates that process: it systematically mutates a software artifact and observes which mutations flip the verdict of real EDR products, localizing the features detections depend on.
+<div class="breakout">
+<MetricGrid
+  items={[
+    { value: '22', label: 'mutation operators', sub: '10 AST · 3 LLVM IR · 9 PE' },
+    { value: '3', label: 'artifact layers' },
+    { value: '3-run', label: 'differential protocol' },
+    { value: '4', label: 'search strategies' },
+    { value: '180', label: 'evaluated rounds' },
+    { value: '42', label: 'integration tests', sub: 'across 13 test files' },
+  ]}
+/>
+</div>
 
-## Approach
+## Problem
 
-The framework, written in Rust, runs a closed feedback loop:
+Endpoint Detection and Response products expose a verdict, but rarely the artifact or runtime evidence behind it. For defenders and researchers, understanding why a detection changed often means manually rebuilding a sample, rerunning it in a lab, comparing telemetry, and trying to separate a meaningful signal from a broken artifact or unstable execution.
 
-- **Multi-layer mutation.** Transformations are applied at three levels of the toolchain: source AST (via tree-sitter), LLVM IR, and the final PE binary, covering syntactic, structural, and binary-level features.
-- **Differential testing.** Each mutant is evaluated against multiple EDRs (Windows Defender, Microsoft Defender for Endpoint, Cortex XDR), so verdict differences isolate product-specific detection logic.
-- **Token-driven feedback scoring.** Detection feedback drives the next round of mutations, steering the search toward the minimal change that alters the verdict.
+That workflow is slow, difficult to reproduce, and vulnerable to false conclusions. A failed build, an instrumented trace, or a flaky worker can look like a detection change unless the experiment treats reliability as a first-class result.
+
+## Research objective
+
+AutoMutate++ automates controlled experiments that ask **which observable software characteristics correlate with a detection change**. It does not stop at producing a changed verdict. The system builds and executes each candidate in isolation, collects runtime and EDR telemetry, classifies the outcome through differential testing, extracts normalized behavioural tokens, and feeds the evidence into later experiments.
+
+> This work is authorised, lab-only defensive research. The evaluated artifacts are non-operational but behaviourally representative; implementation details that would turn the case study into an evasion recipe are intentionally omitted.
+
+## My contribution
+
+I designed and implemented the closed-loop framework during my Master's thesis at armasuisse's Cyber-Defence Campus:
+
+- the Rust controller and orchestration model, exposed through five typed gRPC services and 25 RPCs;
+- the cross-compilation and artifact pipeline spanning source AST, LLVM IR, and PE binaries;
+- isolated Windows worker execution, behavioural monitoring, and telemetry collection;
+- the three-run differential classifier that separates meaningful outcomes from broken or unstable executions;
+- normalized token extraction, correlation scoring, and feedback-driven mutation selection;
+- the evaluation and validation infrastructure used to compare four selector strategies.
+
+## System architecture
+
+The controller coordinates a builder, isolated Windows workers, and an Elasticsearch-backed experiment store. A UI or CLI submits campaign configuration over gRPC; the builder assembles and instruments artifacts; workers execute them under Hyper-V or remote isolation; the controller triages results and records runs, rounds, telemetry, tokens, and artifacts for later analysis in Kibana.
+
+<figure class="breakout">
+  <Image
+    src={architecture}
+    alt="AutoMutate++ architecture: a UI or CLI drives a controller, which coordinates a builder, isolated Windows worker, Elasticsearch storage, and Kibana visualization."
+    widths={[480, 741]}
+    sizes="(max-width: 768px) 92vw, 741px"
+  />
+  <figcaption class="mono">Simplified portfolio view of the controller, build, execution, storage, and analysis loop.</figcaption>
+</figure>
+
+## Three-layer mutation pipeline
+
+The mutation engine operates at three different abstractions, allowing an experiment to vary source structure, compiler representation, or final executable structure without conflating them:
+
+<div class="breakout">
+<FlowDiagram
+  nodes={[
+    { label: 'Source AST', sub: 'tree-sitter transformations', lines: ['10 operators', 'structure-level variation'], accent: 'blue' },
+    { label: 'LLVM IR', sub: 'compiler-level transformations', lines: ['3 operators', 'intermediate representation'], accent: 'amber' },
+    { label: 'PE binary', sub: 'post-link transformations', lines: ['9 operators', 'final artifact structure'], accent: 'teal' },
+    { label: 'Instrumented artifact', sub: 'built, indexed, and dispatched', accent: 'red' },
+  ]}
+  caption="Twenty-two operators span the complete build pipeline; the public case study describes the engineering layers rather than publishing an operational transformation catalogue."
+/>
+</div>
+
+## Reliable experimentation
+
+Every candidate is evaluated with a three-run differential protocol. The sequence distinguishes environmental or instrumentation effects from a candidate that genuinely changes the observed outcome:
+
+<div class="breakout">
+<FlowDiagram
+  nodes={[
+    { label: 'Baseline run', sub: 'reference artifact and environment', accent: 'muted' },
+    { label: 'Instrumented run', sub: 'collect ETW and execution telemetry', accent: 'blue' },
+    { label: 'Candidate run', sub: 'execute the mutated artifact', accent: 'amber' },
+    { label: 'Differential classify', sub: 'compare verdicts, behaviour, and health', lines: ['trustworthy result', 'unstable observation', 'mutation failure'], accent: 'red' },
+    { label: 'Learning loop', sub: 'only eligible outcomes update guidance', accent: 'green' },
+  ]}
+  caption="The protocol prevents a broken build, unstable worker, or observation artifact from being mistaken for useful detection evidence."
+/>
+</div>
+
+Workers execute the artifact through ten controlled phases while six telemetry sources capture execution, EDR, and system evidence. Persistent experiment records make every classification traceable back to its configuration, artifacts, and raw observations.
+
+## Feedback-guided search
+
+Telemetry is normalized into nine behavioural token categories. The scoring layer measures each token's detection correlation and confidence, then converts sufficiently strong evidence into **avoid** or **seek** guidance for later candidates.
+
+I evaluated four ways of choosing the next mutation recipe:
+
+- **Coverage-guided** selection prioritizes under-explored transformations.
+- **Genetic** selection evolves higher-scoring candidate recipes.
+- **Token-guided** selection follows correlations learned from earlier telemetry.
+- **Random** selection provides an unguided baseline.
 
 ## Results
 
-The framework systematically discovers which artifact characteristics individual EDR products key on, turning a manual reverse-engineering exercise into a reproducible, automated measurement. Conducted as authorized security research for my Master's thesis at the Cyber-Defence Campus (armasuisse); source and report are on GitHub.
+The repository's selector-comparison evaluation contains 180 rounds: 39 coverage-guided, 51 genetic, 40 token-guided, and 50 random. The strategies exposed a clear trade-off between effectiveness and experimental reliability.
+
+<div class="breakout">
+<BarChart
+  unit="%"
+  max={100}
+  series={[
+    { key: 'trustworthy', label: 'trustworthy executions', accent: 'green' },
+    { key: 'failures', label: 'mutation failures', accent: 'red' },
+    { key: 'evasions', label: 'successful classification changes', accent: 'blue' },
+  ]}
+  data={[
+    { label: 'coverage', values: { trustworthy: 87.2, failures: 10.3, evasions: 0 } },
+    { label: 'genetic', values: { trustworthy: 54.9, failures: 33.3, evasions: 11.8 } },
+    { label: 'token', values: { trustworthy: 45.0, failures: 52.5, evasions: 0 } },
+    { label: 'random', values: { trustworthy: 32.0, failures: 68.0, evasions: 0 } },
+  ]}
+  caption="Outcome rates in the controlled selector comparison. Genetic search produced 6 successful outcomes across 51 rounds; coverage guidance produced the most dependable executions."
+/>
+</div>
+
+The genetic strategy was the only selector to produce successful classification changes: **6 across 51 rounds**, an 11.8% rate, with a maximum evaluation score of **0.899**. Coverage guidance did not produce the same outcome, but 87.2% of its rounds were trustworthy and only 10.3% failed during mutation.
+
+### Mutation complexity explained the reliability gap
+
+Uniform random search selected far larger recipes than the guided approaches. Its average of 7.3 AST transformations per round coincided with a 68% mutation-failure rate. Genetic search found the only successful candidates with an average recipe size of just 1.9 transformations.
+
+<div class="breakout">
+<BarChart
+  unit=""
+  max={8.5}
+  series={[
+    { key: 'mutations', label: 'mean AST transformations per round', accent: 'amber' },
+  ]}
+  data={[
+    { label: 'coverage', values: { mutations: 1.2 } },
+    { label: 'genetic', values: { mutations: 1.9 } },
+    { label: 'token', values: { mutations: 2.7 } },
+    { label: 'random', values: { mutations: 7.3 } },
+  ]}
+  caption="More mutation was not better: smaller guided recipes were substantially more stable than uniform random combinations."
+/>
+</div>
+
+The result is more useful than a simple winner ranking. **Genetic search was more effective; coverage guidance was more reliable; random search was both complex and fragile.** It shows that a productive experimental loop must optimize for interpretable, executable candidates, not merely maximize the number of transformations.
+
+## Engineering quality
+
+Beyond the selector comparison, the framework was validated through **42 integration tests across 13 test files** and six component-level evaluation experiments. The tests cover the build pipeline, differential classification, telemetry handling, token extraction, and selector behaviour.
+
+Typed gRPC boundaries, deterministic campaign configuration, isolated execution, persistent experiment records, and reproducible datasets make the results auditable instead of reducing them to a one-off demonstration.
+
+## Limitations
+
+- The 180-round comparison is a bounded repository evaluation, not proof that one selector is universally superior.
+- Results depend on the evaluated artifacts, configurations, telemetry visibility, and product versions.
+- Combining several transformations can make causal attribution difficult, even when a candidate changes classification.
+- Stochastic execution and worker instability reduce the number of trustworthy observations.
+- The available material does not establish that every selector-comparison round was a live execution against a named commercial product, so the results are presented as controlled evaluation outcomes rather than product-specific bypass claims.
+- Ethical and operational constraints limit which implementation details and artifacts can be published.
+
+The [source repository](https://github.com/2Tricky4u/Automated-Analysis-and-Mutation-of-Software-Artifacts-against-AV-EDR) contains the framework, evaluation documentation, and sanitised result material.
