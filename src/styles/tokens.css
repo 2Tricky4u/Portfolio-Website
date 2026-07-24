@@ -12,6 +12,13 @@
   --text-faint: #6b6b73;
   --green: #61b752;
 
+  /* Chart / diagram accents (match hexes already used in Callout & prose code) */
+  --teal: #4ec9b0;
+  --amber: #dcdcaa;
+  --blue: #61afef;
+  --danger: var(--red-soft);
+  --success: var(--green);
+
   /* Typography */
   --font-sans: 'Inter Variable', system-ui, -apple-system, sans-serif;
   --font-display: 'Space Grotesk Variable', var(--font-sans);

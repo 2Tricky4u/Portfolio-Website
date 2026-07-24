@@ -21,9 +21,9 @@ const d = (children: Record<string, FSNode>): DirNode => ({ type: 'dir', childre
 
 const FS: DirNode = d({
   'about.txt': f(
-    `Xavier Ogay — cybersecurity engineer.
+    `Xavier Ogay — low-level systems & cybersecurity engineer.
 MSc Cyber Security (EPFL / ETH Zürich). I live below the abstraction layers:
-binary analysis, systems security, and offensive tooling.
+embedded systems, compilers, binary analysis, and systems security.
 Currently: available for hire. Try \x1bopen cv\x1b or \x1bopen github\x1b.`
   ),
   'skills.txt': f(
@@ -260,7 +260,7 @@ class Terminal {
       case 'pwd': return this.print('/' + this.cwd.join('/'));
       case 'cat': return this.cat(args[0]);
       case 'whoami':
-        return this.print('xavier — cybersecurity engineer. (you, however, are a curious visitor.)');
+        return this.print('xavier — low-level systems & cybersecurity engineer. (you, however, are a curious visitor.)');
       case 'neofetch': return this.neofetch();
       case 'skills': return this.cat('skills.txt', FS);
       case 'social': return this.social();
@@ -382,13 +382,13 @@ class Terminal {
     const info: [string, string][] = [
       ['', 'xavier@xavierogay.ch'],
       ['', '--------------------'],
-      ['role', 'Cybersecurity Engineer'],
+      ['role', 'Low-Level Systems & Cybersecurity Engineer'],
       ['edu', 'MSc Cyber Security · EPFL / ETH Zürich'],
       ['os', 'Arch Linux (yes, btw)'],
       ['shell', 'xsh 5.0'],
       ['editor', 'nvim'],
       ['langs', 'C · Rust · Python · ASM'],
-      ['focus', 'binary analysis · systems sec'],
+      ['focus', 'embedded · compilers · binary analysis'],
       ['status', 'available for hire'],
       ['uptime', '~26 years'],
     ];

@@ -1,0 +1,151 @@
+---
+type Accent = 'red' | 'teal' | 'amber' | 'blue' | 'green' | 'muted';
+
+interface Node {
+  label: string;
+  sub?: string;
+  lines?: string[];
+  accent?: Accent;
+}
+
+interface Props {
+  nodes: Node[];
+  caption?: string;
+  /** Connector glyph between nodes (default arrow). */
+  connector?: string;
+}
+
+const { nodes, caption, connector = '→' } = Astro.props;
+---
+
+<figure class="flow">
+  <div class="flow-track" role="list">
+    {
+      nodes.map((n, i) => (
+        <>
+          {i > 0 && (
+            <span class="arrow" aria-hidden="true">
+              {connector}
+            </span>
+          )}
+          <div class:list={['node', n.accent ?? 'muted']} role="listitem">
+            <span class="node-label mono">{n.label}</span>
+            {n.sub && <span class="node-sub">{n.sub}</span>}
+            {n.lines && (
+              <ul class="node-lines">
+                {n.lines.map((l) => (
+                  <li>{l}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </>
+      ))
+    }
+  </div>
+  {caption && <figcaption class="mono">{caption}</figcaption>}
+</figure>
+
+<style>
+  .flow {
+    margin: 0;
+  }
+
+  .flow-track {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    justify-content: center;
+    gap: var(--space-2);
+  }
+
+  .node {
+    flex: 1 1 auto;
+    min-width: 8rem;
+    max-width: 15rem;
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--accent, var(--border));
+    border-radius: 8px;
+    background: var(--bg-1);
+    padding: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .node-label {
+    font-weight: 600;
+    color: var(--text);
+    font-size: var(--text-sm);
+    line-height: 1.25;
+  }
+
+  .node-sub {
+    color: var(--text-faint);
+    font-size: var(--text-xs);
+  }
+
+  .node-lines {
+    margin: var(--space-1) 0 0;
+    padding-left: 1rem;
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    line-height: 1.5;
+  }
+
+  .arrow {
+    align-self: center;
+    color: var(--red);
+    font-family: var(--font-mono);
+    font-size: var(--text-lg);
+    flex: 0 0 auto;
+  }
+
+  .node.red {
+    --accent: var(--red);
+  }
+  .node.teal {
+    --accent: var(--teal);
+  }
+  .node.amber {
+    --accent: var(--amber);
+  }
+  .node.blue {
+    --accent: var(--blue);
+  }
+  .node.green {
+    --accent: var(--green);
+  }
+  .node.muted {
+    --accent: var(--text-faint);
+  }
+
+  figcaption {
+    margin-top: var(--space-3);
+    color: var(--text-faint);
+    text-align: center;
+    font-size: var(--text-xs);
+  }
+
+  /* Stack vertically on narrow screens; arrows point down. */
+  @media (max-width: 640px) {
+    .flow-track {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .node {
+      max-width: none;
+    }
+
+    .arrow {
+      transform: rotate(90deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .arrow {
+      transition: none;
+    }
+  }
+</style>

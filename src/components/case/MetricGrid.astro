@@ -1,0 +1,70 @@
+---
+interface Item {
+  value: string;
+  label: string;
+  sub?: string;
+}
+
+interface Props {
+  items: Item[];
+}
+
+const { items } = Astro.props;
+---
+
+<dl class="metric-grid">
+  {
+    items.map((it) => (
+      <div class="metric">
+        <dt class="value mono">{it.value}</dt>
+        <dd class="label">
+          {it.label}
+          {it.sub && <span class="sub">{it.sub}</span>}
+        </dd>
+      </div>
+    ))
+  }
+</dl>
+
+<style>
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+    gap: var(--space-3);
+    margin: 0;
+  }
+
+  .metric {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-1);
+    padding: var(--space-3) var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .value {
+    font-size: var(--text-xl);
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.1;
+  }
+
+  .label {
+    margin: 0;
+    color: var(--text-faint);
+    font-size: var(--text-xs);
+    line-height: 1.4;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .sub {
+    display: block;
+    text-transform: none;
+    letter-spacing: normal;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+</style>

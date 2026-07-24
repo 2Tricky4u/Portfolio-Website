@@ -1,0 +1,100 @@
+---
+interface Props {
+  beforeLabel?: string;
+  afterLabel?: string;
+  beforeCode: string;
+  afterCode: string;
+  beforeNote?: string;
+  afterNote?: string;
+  caption?: string;
+}
+
+const {
+  beforeLabel = 'naive',
+  afterLabel = 'optimized',
+  beforeCode,
+  afterCode,
+  beforeNote,
+  afterNote,
+  caption,
+} = Astro.props;
+---
+
+<figure class="ba">
+  <div class="ba-grid">
+    <div class="panel before">
+      <p class="panel-head mono">{beforeLabel}</p>
+      <pre class="mono"><code>{beforeCode}</code></pre>
+      {beforeNote && <p class="note mono">{beforeNote}</p>}
+    </div>
+    <div class="panel after">
+      <p class="panel-head mono">{afterLabel}</p>
+      <pre class="mono"><code>{afterCode}</code></pre>
+      {afterNote && <p class="note mono">{afterNote}</p>}
+    </div>
+  </div>
+  {caption && <figcaption class="mono">{caption}</figcaption>}
+</figure>
+
+<style>
+  .ba {
+    margin: 0;
+  }
+
+  .ba-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: var(--space-3);
+  }
+
+  .panel {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-2);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel-head {
+    padding: 0.5rem 0.85rem;
+    background: var(--bg-1);
+    border-bottom: 1px solid var(--border);
+    color: var(--accent);
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .before {
+    --accent: var(--red-soft);
+  }
+
+  .after {
+    --accent: var(--green);
+  }
+
+  pre {
+    margin: 0;
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    color: var(--text);
+    overflow-x: auto;
+    flex: 1;
+  }
+
+  .note {
+    padding: 0.5rem 0.85rem;
+    border-top: 1px solid var(--border);
+    color: var(--accent);
+    font-size: var(--text-xs);
+  }
+
+  figcaption {
+    margin-top: var(--space-3);
+    text-align: center;
+    color: var(--text-faint);
+    font-size: var(--text-xs);
+  }
+</style>

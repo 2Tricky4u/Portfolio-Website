@@ -16,10 +16,34 @@ interface Props {
 
 const {
   title,
-  description = 'Xavier Ogay, cybersecurity engineer. MSc Cyber Security (EPFL/ETHZ). Binary analysis, systems security, offensive tooling.',
+  description = 'Low-level systems and cybersecurity engineer working with Rust, C/C++, LLVM, embedded systems, binary analysis and security tooling. Joint MSc Cyber Security (EPFL/ETHZ).',
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site);
+
+const personLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: 'Xavier Ogay',
+  jobTitle: 'Low-Level Systems & Cybersecurity Engineer',
+  url: Astro.site?.href ?? 'https://www.xavierogay.ch',
+  alumniOf: [
+    { '@type': 'CollegeOrUniversity', name: 'EPFL (École polytechnique fédérale de Lausanne)' },
+    { '@type': 'CollegeOrUniversity', name: 'ETH Zürich' },
+  ],
+  knowsAbout: [
+    'Low-level systems programming',
+    'Rust',
+    'C/C++',
+    'LLVM',
+    'WebAssembly',
+    'Embedded systems',
+    'Compiler infrastructure',
+    'Binary analysis',
+    'Systems security',
+  ],
+  sameAs: ['https://github.com/2Tricky4u', 'https://linkedin.com/in/xavier-ogay'],
+};
 ---
 
 <!doctype html>
@@ -37,6 +61,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
     <meta name="generator" content={Astro.generator} />
+    <script type="application/ld+json" set:html={JSON.stringify(personLd)} is:inline />
     <!-- GoatCounter analytics (privacy-first, no cookies). -->
     <script
       is:inline

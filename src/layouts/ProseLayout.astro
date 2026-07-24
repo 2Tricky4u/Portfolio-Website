@@ -8,7 +8,7 @@ interface Props {
   meta?: string[];
   backHref?: string;
   backLabel?: string;
-  variant?: 'default' | 'writeup';
+  variant?: 'default' | 'writeup' | 'project';
 }
 
 const {
@@ -23,7 +23,12 @@ const {
 ---
 
 <BaseLayout title={title} description={description}>
-  <article class:list={['section', { 'is-writeup': variant === 'writeup' }]}>
+  <article
+    class:list={[
+      'section',
+      { 'is-writeup': variant === 'writeup', 'is-project': variant === 'project' },
+    ]}
+  >
     <div class="prose-container">
       <p class="back mono">
         <a class="link" href={backHref}>&larr; {backLabel}</a>
@@ -239,5 +244,20 @@ const {
 
   .is-writeup .prose :global(:not(pre) > code) {
     font-size: 0.92em;
+  }
+
+  /* Case studies: a roomier column than the 42rem default so metric cards,
+     diagrams and charts have room, plus a `.breakout` escape hatch that lets a
+     wrapped visual span wider than the text column (centered on the viewport). */
+  .is-project .prose-container {
+    max-width: 52rem;
+  }
+
+  .is-project .prose :global(.breakout) {
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(72rem, 92vw);
+    margin-block: var(--space-5);
   }
 </style>

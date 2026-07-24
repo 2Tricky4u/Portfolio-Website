@@ -1,0 +1,125 @@
+---
+title: Symbolic LLVM Memory Sandboxing for WebAssembly
+summary: A static analysis framework at the LLVM level that proves memory safety of WASM smart contracts and emits optimized runtime checks only where safety cannot be proven.
+period: '2025'
+org: EPFL · Research project
+tags: [LLVM, WebAssembly, 'C++', Static Analysis, Symbolic Execution]
+featured: true
+order: 2
+cover: ../../assets/projects/MP.png
+links:
+  pdf: /doc/MP_slides.pdf
+---
+
+import MetricGrid from '../../components/case/MetricGrid.astro';
+import FlowDiagram from '../../components/case/FlowDiagram.astro';
+import BeforeAfter from '../../components/case/BeforeAfter.astro';
+import BarChart from '../../components/case/BarChart.astro';
+
+**Proving memory-safety bounds checks away at compile time cut instrumentation overhead by up to 85% across 12 WebAssembly kernels, while preserving full spatial safety and deterministic execution.**
+
+<div class="breakout">
+<MetricGrid
+  items={[
+    { value: '12', label: 'kernels benchmarked' },
+    { value: '4', label: 'instrumentation configs' },
+    { value: 'up to 85%', label: 'overhead removed' },
+    { value: '~66%', label: 'median overhead cut', sub: 'best config per kernel' },
+    { value: '1.6–10.6×', label: 'naive check cost' },
+    { value: 'LLVM IR', label: 'analysis level' },
+  ]}
+/>
+</div>
+
+## Problem
+
+WebAssembly is increasingly used as an execution layer for smart contracts, where a single memory-safety bug can be catastrophic and execution must stay strictly deterministic across replicas. Conventional sandboxing inserts a bounds check on *every* memory access, paying 1.6–10.6× runtime overhead even when most accesses are provably safe.
+
+The question this project asks: how many of those checks can a compiler *prove away* statically, and how cheap can the remainder be made without sacrificing determinism or spatial safety?
+
+## Architecture
+
+The work extends **Droplet**, an ahead-of-time compiler that lowers WASM smart contracts to native `.so` shared objects, which then run on **Drizzle**, a runtime that executes contracts in parallel and deterministically. My symbolic memory-safety layer plugs into Droplet at the LLVM IR level.
+
+<div class="breakout">
+<FlowDiagram
+  nodes={[
+    { label: 'WASM module', sub: 'contract, any source language', accent: 'muted' },
+    { label: 'Droplet AOT', sub: 'parse → SMIR (stack IR)', accent: 'blue' },
+    { label: 'LLVM IR (SSA)', accent: 'blue' },
+    { label: 'Symbolic analysis', sub: 'SymExpr · SymbolicState', lines: ['prove in-bounds → no check', 'else emit range check'], accent: 'red' },
+    { label: '.bc → clang → .so', sub: 'native shared object', accent: 'teal' },
+    { label: 'Drizzle runtime', sub: 'parallel · deterministic', accent: 'green' },
+  ]}
+  caption="My contribution (red) sits inside the existing Droplet → Drizzle pipeline, at the LLVM IR level."
+/>
+</div>
+
+## My contribution
+
+Droplet and Drizzle are pre-existing systems in EPFL's Distributed Computing Lab. My work is the **symbolic memory-safety layer inside Droplet**, built under the supervision of Prof. Rachid Guerraoui and Dr. Gauthier Voron:
+
+- **SymExpr** — a symbolic expression framework that represents pointer arithmetic in a canonical normal form, so equivalent access patterns are recognized and analyzed once.
+- **SymbolicState** — a per-basic-block state with inter-block merging that traverses the CFG in reverse post-order, staying precise across control-flow joins instead of conservatively discarding information.
+- **Memory Check Optimization** — the loop-aware analysis and check emitter described below.
+
+## Key technical decisions
+
+- **Loop detection** via CFG back-edges and the dominator tree; the natural loop body is derived from the header/tail boundary.
+- **Fixed-point refinement** over each loop until the symbolic state stabilizes, inferring induction variables and their step (e.g. `i += 1`) to bound loop accesses in aggregate rather than per iteration.
+- **Grouping** loop-strided accesses by symbolic base/stride, then emitting a single pre-loop block with one range check per group.
+
+## From n checks to one
+
+<BeforeAfter
+  beforeLabel="naive — one check per access"
+  afterLabel="optimized — one range check per group"
+  beforeCode={`for i in 0..n:
+    check(base + i*stride)   // runtime bounds check
+    load (base + i*stride)`}
+  afterCode={`check_range(base, base + (n-1)*stride)   // once, pre-loop
+for i in 0..n:
+    load (base + i*stride)`}
+  beforeNote="n iterations → n runtime checks"
+  afterNote="n iterations → 1 runtime check"
+  caption="Loop-strided accesses are grouped by symbolic base/stride; a single pre-loop range check, proven safe by induction-variable bounds, replaces the per-iteration checks."
+/>
+
+## Results
+
+Benchmarked on 12 computation kernels under 4 instrumentation configurations, using µs medians under realistic `.so` batching. Naive per-access bounds checking costs 1.6–10.6× the un-sandboxed baseline; the optimized instrumentation removes up to **85%** of that overhead (median ~66% across the 12 kernels, best configuration per kernel), collapsing most workloads back toward 1.0×.
+
+<div class="breakout">
+<BarChart
+  unit="×"
+  max={12.5}
+  baseline={1}
+  baselineLabel="1.0× no-sandbox"
+  series={[
+    { key: 'naive', label: 'naive per-access checks', accent: 'red' },
+    { key: 'opt', label: 'optimized instrumentation', accent: 'green' },
+  ]}
+  data={[
+    { label: 'addbounded', values: { naive: 10.6, opt: 1.6 } },
+    { label: 'prefix', values: { naive: 8.2, opt: 2.5 } },
+    { label: 'nested', values: { naive: 4.7, opt: 1.3 } },
+    { label: 'add1', values: { naive: 4.2, opt: 1.1 } },
+    { label: 'redundant', values: { naive: 4.1, opt: 1.0 } },
+    { label: 'reverse', values: { naive: 3.0, opt: 1.0 } },
+    { label: 'fibonaccilike', values: { naive: 2.9, opt: 1.3 } },
+    { label: '2d', values: { naive: 2.9, opt: 1.1 } },
+    { label: 'matrix', values: { naive: 2.9, opt: 1.0 } },
+    { label: 'slidewindow', values: { naive: 2.5, opt: 1.1 } },
+    { label: 'stride', values: { naive: 2.3, opt: 1.1 } },
+    { label: 'conditional', values: { naive: 1.6, opt: 1.3 } },
+  ]}
+  caption="Execution time normalized to the un-sandboxed baseline (1.0×), sorted by naive cost. The biggest wins are in loop-heavy kernels, where per-iteration checks collapse to a single pre-loop range check."
+/>
+</div>
+
+## Limitations and next steps
+
+- **Assumption-based check elision** — tracking `icmp` constraints from user code to prove that two access ranges are disjoint (and drop or merge their checks) is a working skeleton, not yet evaluated.
+- **Sea of Nodes** — the original goal of a Sea-of-Nodes IR for precise memory placement was descoped to fit the project timeline; the symbolic infrastructure is designed to later sit beneath a SoN-based optimizer.
+
+The [full report](/doc/Master_Thesis.pdf) has the details; the [slide deck](/doc/MP_slides.pdf) gives a condensed overview.
