@@ -1,0 +1,294 @@
+---
+import FigureFrame from './FigureFrame.astro';
+
+interface Props {
+  label?: string;
+}
+
+const { label = 'fig 3-1 · a pe32+ binary at a glance' } = Astro.props;
+---
+
+<FigureFrame label={label}>
+  <svg
+    viewBox="0 0 936 540"
+    role="img"
+    aria-label="The anatomy of a 64-bit PE32+ binary. The file opens with an MS-DOS header whose e_lfanew field points past the MS-DOS stub to the PE signature. The signature, the PE file header and the PE optional header together play the role of ELF's single executable header. The optional header ends in a sixteen-entry DataDirectory that gives the loader shortcuts to the import, export and relocation tables. A section header table follows, one IMAGE_SECTION_HEADER per section, and then the sections themselves. Unlike ELF there is no program header table: the section header table serves both linking and loading."
+  >
+    <defs>
+      <marker
+        id="pl-arrow"
+        markerUnits="userSpaceOnUse"
+        markerWidth="9"
+        markerHeight="9"
+        refX="8.5"
+        refY="4.5"
+        orient="auto"
+      >
+        <path d="M0,0 L9,4.5 L0,9 Z" class="arrow-head"></path>
+      </marker>
+      <marker
+        id="pl-arrow-teal"
+        markerUnits="userSpaceOnUse"
+        markerWidth="9"
+        markerHeight="9"
+        refX="8.5"
+        refY="4.5"
+        orient="auto"
+      >
+        <path d="M0,0 L9,4.5 L0,9 Z" class="arrow-head-teal"></path>
+      </marker>
+      <pattern id="pl-grid" width="22" height="22" patternUnits="userSpaceOnUse">
+        <circle cx="1.5" cy="1.5" r="1" class="grid-dot"></circle>
+      </pattern>
+    </defs>
+
+    <rect x="0" y="0" width="936" height="540" fill="url(#pl-grid)"></rect>
+
+    <!-- MS-DOS header -->
+    <rect class="box proc-red" x="196" y="26" width="300" height="56" rx="6"></rect>
+    <text class="title lbl-red" x="346" y="48">MS-DOS header</text>
+    <text class="sub" x="346" y="66">IMAGE_DOS_HEADER · "MZ" · e_lfanew</text>
+    <line class="tick" x1="496" y1="44" x2="520" y2="44"></line>
+    <text class="note" x="526" y="48">1981 compatibility shim, still mandatory;</text>
+    <text class="note" x="526" y="64">e_lfanew is the only field that still matters</text>
+
+    <!-- MS-DOS stub -->
+    <rect class="box box-plain" x="196" y="92" width="300" height="48" rx="6"></rect>
+    <text class="title lbl-faint" x="346" y="112">MS-DOS stub</text>
+    <text class="sub" x="346" y="130">"This program cannot be run in DOS mode"</text>
+    <line class="tick" x1="496" y1="112" x2="520" y2="112"></line>
+    <text class="note" x="526" y="116">a real 16-bit DOS program that just</text>
+    <text class="note" x="526" y="132">prints and exits</text>
+
+    <!-- PE signature -->
+    <rect class="box proc-teal" x="196" y="150" width="300" height="38" rx="6"></rect>
+    <text class="title lbl-teal" x="346" y="174">PE signature · "PE\0\0"</text>
+    <line class="tick" x1="496" y1="170" x2="520" y2="170"></line>
+    <text class="note" x="526" y="174">the real magic; ELF's \x7fELF equivalent</text>
+
+    <!-- PE file header -->
+    <rect class="box proc-amber" x="196" y="198" width="300" height="58" rx="6"></rect>
+    <text class="title lbl-amber" x="346" y="220">PE file header</text>
+    <text class="sub" x="346" y="238">IMAGE_FILE_HEADER · 20 bytes</text>
+    <text class="fields" x="346" y="252">Machine · NumberOfSections · Characteristics</text>
+    <line class="tick" x1="496" y1="216" x2="520" y2="216"></line>
+    <text class="note" x="526" y="220">the COFF part PE inherited</text>
+
+    <!-- PE optional header -->
+    <rect class="box proc-amber" x="196" y="266" width="300" height="92" rx="6"></rect>
+    <text class="title lbl-amber" x="346" y="288">PE optional header</text>
+    <text class="sub" x="346" y="306">IMAGE_OPTIONAL_HEADER64 · not optional</text>
+    <text class="fields" x="346" y="322">Magic 0x20b · ImageBase · AddressOfEntryPoint</text>
+    <rect class="chip chip-dir" x="228" y="330" width="236" height="20" rx="4"></rect>
+    <text class="chip-text lbl-teal" x="346" y="344">DataDirectory[16]</text>
+    <line class="tick" x1="496" y1="284" x2="520" y2="284"></line>
+    <text class="view-tag lbl-teal" x="526" y="288">CLOSEST THING TO AN EXECUTION VIEW</text>
+    <text class="note" x="526" y="304">16 (RVA, size) pairs: import, export,</text>
+    <text class="note" x="526" y="320">reloc, IAT … loader shortcuts, so it</text>
+    <text class="note" x="526" y="336">never has to walk the section table</text>
+
+    <!-- section header table -->
+    <rect class="box proc-blue" x="196" y="368" width="300" height="58" rx="6"></rect>
+    <text class="title lbl-blue" x="346" y="390">section header table</text>
+    <text class="sub" x="346" y="408">NumberOfSections × IMAGE_SECTION_HEADER</text>
+    <text class="fields" x="346" y="422">Name[8] · VirtualAddress · Characteristics</text>
+    <line class="tick" x1="496" y1="386" x2="520" y2="386"></line>
+    <text class="view-tag lbl-blue" x="526" y="390">LINKING AND LOADING BOTH</text>
+    <text class="note" x="526" y="406">no program header table exists;</text>
+    <text class="note" x="526" y="422">this one table does both jobs</text>
+
+    <!-- sections -->
+    <rect class="box box-sections" x="196" y="436" width="300" height="86" rx="6"></rect>
+    <text class="title lbl-green" x="346" y="458">sections</text>
+    <g>
+      <rect class="chip" x="210" y="468" width="80" height="20" rx="4"></rect>
+      <text class="sect-name" x="250" y="482">.text</text>
+      <rect class="chip" x="300" y="468" width="80" height="20" rx="4"></rect>
+      <text class="sect-name" x="340" y="482">.rdata</text>
+      <rect class="chip" x="390" y="468" width="92" height="20" rx="4"></rect>
+      <text class="sect-name" x="436" y="482">.data</text>
+      <rect class="chip" x="210" y="494" width="80" height="20" rx="4"></rect>
+      <text class="sect-name" x="250" y="508">.pdata</text>
+      <rect class="chip" x="300" y="494" width="80" height="20" rx="4"></rect>
+      <text class="sect-name" x="340" y="508">.reloc</text>
+      <rect class="chip chip-dir" x="390" y="494" width="92" height="20" rx="4"></rect>
+      <text class="sect-name lbl-teal" x="436" y="508">.idata/.edata</text>
+    </g>
+    <line class="tick" x1="496" y1="454" x2="520" y2="454"></line>
+    <text class="note" x="526" y="458">names live inline in an 8-byte char array,</text>
+    <text class="note" x="526" y="474">not in a string table — so no .shstrtab,</text>
+    <text class="note" x="526" y="490">and names are capped at 8 characters</text>
+
+    <!-- e_lfanew elbow: DOS header -> PE signature -->
+    <path class="ptr ptr-teal" d="M196,66 L150,66 L150,169 L192,169" marker-end="url(#pl-arrow-teal)"></path>
+    <text class="ptr-label lbl-teal anchor-end" x="142" y="120">e_lfanew</text>
+
+    <!-- one section header per section -->
+    <path class="ptr ptr-dash" d="M196,397 L120,397 L120,479 L206,479" marker-end="url(#pl-arrow)"></path>
+    <text class="ptr-label anchor-end" x="112" y="440">one per section</text>
+  </svg>
+  <span slot="caption">
+    PE splits ELF's single executable header into three (signature, file header, optional header)
+    and prepends an MS-DOS header for backward compatibility. Note what is missing: there is no
+    program header table. Redrawn from fig. 3-1 of <em>Practical Binary Analysis</em>.
+  </span>
+</FigureFrame>
+
+<style>
+  text {
+    font-family: var(--font-mono);
+    font-variant-ligatures: none;
+    text-anchor: middle;
+  }
+
+  .grid-dot {
+    fill: var(--border);
+    opacity: 0.5;
+  }
+
+  .box {
+    fill: var(--bg-1);
+    stroke-width: 1.25;
+    stroke-opacity: 0.75;
+  }
+
+  .box-plain {
+    stroke: var(--border);
+    stroke-opacity: 1;
+  }
+
+  .box-sections {
+    stroke: var(--border);
+    stroke-opacity: 1;
+  }
+
+  .proc-red {
+    stroke: var(--red-soft);
+  }
+
+  .proc-teal {
+    stroke: var(--teal);
+  }
+
+  .proc-amber {
+    stroke: var(--amber);
+  }
+
+  .proc-blue {
+    stroke: var(--blue);
+  }
+
+  .title {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .lbl-red {
+    fill: var(--red-soft);
+  }
+
+  .lbl-teal {
+    fill: var(--teal);
+  }
+
+  .lbl-amber {
+    fill: var(--amber);
+  }
+
+  .lbl-blue {
+    fill: var(--blue);
+  }
+
+  .lbl-green {
+    fill: var(--green);
+  }
+
+  .lbl-faint {
+    fill: var(--text-muted);
+  }
+
+  .sub {
+    fill: var(--text-faint);
+    font-size: 10px;
+  }
+
+  .fields {
+    fill: var(--text-muted);
+    font-size: 10px;
+  }
+
+  .chip {
+    fill: var(--bg-2);
+    stroke: var(--border);
+    stroke-width: 1;
+  }
+
+  .chip-dir {
+    stroke: var(--teal);
+    stroke-opacity: 0.6;
+  }
+
+  .chip-text {
+    font-size: 10.5px;
+  }
+
+  .sect-name {
+    fill: var(--green);
+    font-size: 11px;
+  }
+
+  .tick {
+    stroke: var(--border);
+    stroke-width: 1;
+  }
+
+  .note {
+    fill: var(--text-faint);
+    font-size: 10.5px;
+    text-anchor: start;
+  }
+
+  .view-tag {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-anchor: start;
+  }
+
+  .ptr {
+    fill: none;
+    stroke: var(--text-faint);
+    stroke-width: 1.5;
+  }
+
+  .ptr-dash {
+    stroke-dasharray: 4 3;
+  }
+
+  .ptr-teal {
+    stroke: var(--teal);
+    stroke-opacity: 0.85;
+  }
+
+  .ptr-label {
+    fill: var(--text-faint);
+    font-size: 10px;
+    text-anchor: start;
+  }
+
+  .anchor-end {
+    text-anchor: end;
+  }
+
+  .ptr-label.lbl-teal {
+    fill: var(--teal);
+  }
+
+  .arrow-head {
+    fill: var(--text-faint);
+  }
+
+  .arrow-head-teal {
+    fill: var(--teal);
+    fill-opacity: 0.85;
+  }
+</style>

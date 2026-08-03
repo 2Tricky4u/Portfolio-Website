@@ -108,9 +108,9 @@ const { label = 'fig 2-1 · a 64-bit elf binary at a glance' } = Astro.props;
 
     <!-- e_phoff / e_shoff pointer elbows -->
     <path class="ptr" d="M200,88 L152,88 L152,178 L196,178" marker-end="url(#el-arrow)"></path>
-    <text class="ptr-label lbl-amber" x="144" y="182" text-anchor="end">e_phoff</text>
+    <text class="ptr-label lbl-amber anchor-end" x="144" y="182">e_phoff</text>
     <path class="ptr" d="M200,102 L112,102 L112,478 L196,478" marker-end="url(#el-arrow)"></path>
-    <text class="ptr-label lbl-blue" x="104" y="482" text-anchor="end">e_shoff</text>
+    <text class="ptr-label lbl-blue anchor-end" x="104" y="482">e_shoff</text>
 
     <!-- one Elf64_Shdr per section -->
     <line class="ptr ptr-dash" x1="240" y1="436" x2="240" y2="400" marker-end="url(#el-arrow)"></line>
@@ -263,6 +263,10 @@ const { label = 'fig 2-1 · a 64-bit elf binary at a glance' } = Astro.props;
 
   .ptr-label.lbl-teal {
     fill: var(--teal);
+  }
+
+  .anchor-end {
+    text-anchor: end;
   }
 
   .arrow-head {

@@ -1,0 +1,304 @@
+---
+import FigureFrame from './FigureFrame.astro';
+
+interface Props {
+  label?: string;
+}
+
+const { label = 'calling a dll function · thunk + iat' } = Astro.props;
+---
+
+<FigureFrame label={label}>
+  <svg
+    viewBox="0 0 936 500"
+    role="img"
+    aria-label="Calling a DLL function through a PE thunk and the Import Address Table. Step 1: code in .text calls a thunk. Step 2: the thunk is a single indirect jump through an IAT slot in .rdata. Step 3: on disk that slot holds a pointer to a hint slash name entry naming the function and its DLL. Step 4: at load time the Windows loader reads the import directory, finds the function in the DLL's export table, and overwrites the slot with the real address. Step 5: the jump then lands directly in the DLL. Unlike ELF's lazy binding this resolution happens up front at load time, so the thunk never changes and there is no resolver stub."
+  >
+    <defs>
+      <marker
+        id="ti-arrow"
+        markerUnits="userSpaceOnUse"
+        markerWidth="9"
+        markerHeight="9"
+        refX="8.5"
+        refY="4.5"
+        orient="auto"
+      >
+        <path d="M0,0 L9,4.5 L0,9 Z" class="arrow-head"></path>
+      </marker>
+      <marker
+        id="ti-arrow-amber"
+        markerUnits="userSpaceOnUse"
+        markerWidth="9"
+        markerHeight="9"
+        refX="8.5"
+        refY="4.5"
+        orient="auto"
+      >
+        <path d="M0,0 L9,4.5 L0,9 Z" class="arrow-head-amber"></path>
+      </marker>
+      <marker
+        id="ti-arrow-green"
+        markerUnits="userSpaceOnUse"
+        markerWidth="9"
+        markerHeight="9"
+        refX="8.5"
+        refY="4.5"
+        orient="auto"
+      >
+        <path d="M0,0 L9,4.5 L0,9 Z" class="arrow-head-green"></path>
+      </marker>
+      <pattern id="ti-grid" width="22" height="22" patternUnits="userSpaceOnUse">
+        <circle cx="1.5" cy="1.5" r="1" class="grid-dot"></circle>
+      </pattern>
+    </defs>
+
+    <rect x="0" y="0" width="936" height="500" fill="url(#ti-grid)"></rect>
+
+    <text class="col-head" x="250" y="36">.text · CODE · R-X</text>
+    <text class="col-head" x="712" y="36">.rdata · DATA · R--</text>
+
+    <!-- caller -->
+    <rect class="box code" x="70" y="52" width="360" height="68" rx="6"></rect>
+    <text class="sect-tag lbl-red" x="86" y="72">caller</text>
+    <text class="code-line dim" x="100" y="94">&lt;crt startup&gt;:</text>
+    <text class="code-line hot" x="112" y="110">call 140001603</text>
+
+    <!-- thunk -->
+    <rect class="box code" x="70" y="148" width="360" height="76" rx="6"></rect>
+    <text class="sect-tag lbl-red" x="86" y="168">thunk</text>
+    <text class="code-line dim" x="100" y="190">140001603:</text>
+    <text class="code-line hot" x="112" y="208">jmp QWORD PTR [rip+0x14a16]</text>
+    <text class="tiny" x="112" y="222">one instruction — no push, no stub chain</text>
+
+    <!-- import directory -->
+    <rect class="box dir" x="70" y="256" width="360" height="88" rx="6"></rect>
+    <text class="sect-tag lbl-teal" x="86" y="276">import directory · DataDirectory[1]</text>
+    <text class="code-line dim" x="86" y="298">DLL Name:   KERNEL32.dll</text>
+    <text class="code-line dim" x="86" y="316">Hint/Name:  RVA 0x20280 · 922 InitializeSListHead</text>
+    <text class="code-line dim" x="86" y="334">FirstThunk: RVA 0x16000  → the IAT</text>
+
+    <!-- windows loader -->
+    <rect class="box loader" x="70" y="376" width="360" height="72" rx="6"></rect>
+    <text class="sect-tag lbl-teal" x="86" y="398">Windows loader</text>
+    <text class="code-line dim" x="86" y="420">map DLLs, read each import descriptor,</text>
+    <text class="code-line dim" x="86" y="438">match names against the DLL export table</text>
+
+    <!-- IAT -->
+    <rect class="box data" x="560" y="52" width="320" height="172" rx="6"></rect>
+    <text class="sect-tag lbl-amber" x="576" y="72">Import Address Table</text>
+    <text class="code-line dim" x="576" y="96">DataDirectory[12] · RVA 0x16000 · size 0x268</text>
+    <rect class="slot" x="572" y="108" width="294" height="100" rx="4"></rect>
+    <text class="code-line" x="586" y="128">140016020  the slot the thunk reads:</text>
+    <text class="code-line lbl-amber" x="586" y="150">on disk: 0x20280 → Hint/Name</text>
+    <text class="tiny" x="586" y="166">(a name to look up, not an address)</text>
+    <text class="code-line lbl-green" x="586" y="188">after load: &amp;InitializeSListHead</text>
+    <text class="tiny" x="586" y="202">patched once, before main runs</text>
+
+    <!-- DLL -->
+    <rect class="box dll" x="560" y="376" width="320" height="72" rx="6"></rect>
+    <text class="sect-tag lbl-green" x="576" y="398">KERNEL32.dll</text>
+    <text class="code-line dim" x="576" y="420">export table (.edata) resolves the name</text>
+    <text class="code-line dim" x="576" y="438">to the function's real address</text>
+
+    <!-- flows -->
+    <line class="flow" x1="250" y1="120" x2="250" y2="145" marker-end="url(#ti-arrow)"></line>
+    <line class="flow" x1="430" y1="204" x2="566" y2="140" marker-end="url(#ti-arrow)"></line>
+    <line class="flow flow-dim" x1="250" y1="224" x2="250" y2="253" marker-end="url(#ti-arrow)"></line>
+    <line class="flow flow-dim" x1="250" y1="344" x2="250" y2="373" marker-end="url(#ti-arrow)"></line>
+    <line class="flow flow-dim" x1="434" y1="412" x2="556" y2="412" marker-end="url(#ti-arrow)"></line>
+    <path
+      class="flow flow-patch"
+      d="M884,404 L906,404 L906,180 L870,180"
+      marker-end="url(#ti-arrow-amber)"></path>
+    <path
+      class="flow flow-later"
+      d="M700,224 L700,300 L740,300 L740,372"
+      marker-end="url(#ti-arrow-green)"></path>
+
+    <!-- badges -->
+    <g class="badge"><circle cx="270" cy="133" r="9"></circle><text x="270" y="136.5">1</text></g>
+    <g class="badge"><circle cx="499" cy="172" r="9"></circle><text x="499" y="175.5">2</text></g>
+    <g class="badge"><circle cx="838" cy="150" r="9"></circle><text x="838" y="153.5">3</text></g>
+    <g class="badge badge-amber"
+      ><circle cx="906" cy="292" r="9"></circle><text x="906" y="295.5">4</text></g
+    >
+    <g class="badge badge-green"
+      ><circle cx="740" cy="336" r="9"></circle><text x="740" y="339.5">5</text></g
+    >
+
+    <text class="side-note lbl-amber anchor-end" x="836" y="292">writes the address</text>
+    <text class="later-note" x="468" y="480">
+      resolved at load time, not on first call: the thunk is identical before and after
+    </text>
+  </svg>
+  <span slot="caption">
+    PE's answer to the PLT and GOT. The thunk plays the PLT stub's role and the IAT slot plays the
+    GOT slot's, but the Windows loader fills every slot up front, so there is no resolver
+    trampoline to walk. Addresses from the <code>hello.exe</code> built above.
+  </span>
+</FigureFrame>
+
+<style>
+  text {
+    font-family: var(--font-mono);
+    font-variant-ligatures: none;
+    text-anchor: middle;
+  }
+
+  .grid-dot {
+    fill: var(--border);
+    opacity: 0.5;
+  }
+
+  .col-head {
+    fill: var(--text-faint);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+
+  .box {
+    fill: var(--bg-1);
+    stroke-width: 1.25;
+    stroke-opacity: 0.75;
+  }
+
+  .box.code {
+    stroke: var(--red-soft);
+  }
+
+  .box.data {
+    stroke: var(--amber);
+  }
+
+  .box.dir {
+    stroke: var(--teal);
+  }
+
+  .box.loader {
+    stroke: var(--teal);
+  }
+
+  .box.dll {
+    stroke: var(--green);
+  }
+
+  .slot {
+    fill: var(--bg-2);
+    stroke: var(--red-soft);
+    stroke-width: 1.25;
+    stroke-opacity: 0.9;
+  }
+
+  .sect-tag {
+    font-size: 12px;
+    font-weight: 600;
+    text-anchor: start;
+  }
+
+  .lbl-red {
+    fill: var(--red-soft);
+  }
+
+  .lbl-amber {
+    fill: var(--amber);
+  }
+
+  .lbl-teal {
+    fill: var(--teal);
+  }
+
+  .lbl-green {
+    fill: var(--green);
+  }
+
+  .code-line {
+    fill: var(--text);
+    font-size: 11px;
+    text-anchor: start;
+    white-space: pre;
+  }
+
+  .code-line.dim {
+    fill: var(--text-muted);
+  }
+
+  .code-line.hot {
+    fill: var(--text);
+    font-weight: 600;
+  }
+
+  .tiny {
+    fill: var(--text-faint);
+    font-size: 9.5px;
+    text-anchor: start;
+  }
+
+  .flow {
+    fill: none;
+    stroke: var(--text-faint);
+    stroke-width: 1.5;
+  }
+
+  .flow-dim {
+    stroke-opacity: 0.55;
+    stroke-dasharray: 4 3;
+  }
+
+  .flow-patch {
+    stroke: var(--amber);
+    stroke-dasharray: 4 3;
+  }
+
+  .flow-later {
+    stroke: var(--green);
+    stroke-dasharray: 4 3;
+    stroke-opacity: 0.9;
+  }
+
+  .badge circle {
+    fill: var(--bg-2);
+    stroke: var(--red-soft);
+    stroke-width: 1.25;
+  }
+
+  .badge text {
+    fill: var(--text);
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .badge-amber circle {
+    stroke: var(--amber);
+  }
+
+  .badge-green circle {
+    stroke: var(--green);
+  }
+
+  .side-note {
+    fill: var(--text-faint);
+    font-size: 10px;
+  }
+
+  .anchor-end {
+    text-anchor: end;
+  }
+
+  .later-note {
+    fill: var(--text-faint);
+    font-size: 10.5px;
+  }
+
+  .arrow-head {
+    fill: var(--text-faint);
+  }
+
+  .arrow-head-amber {
+    fill: var(--amber);
+  }
+
+  .arrow-head-green {
+    fill: var(--green);
+  }
+</style>
