@@ -1,0 +1,95 @@
+---
+interface Props {
+  label?: string;
+  minWidth?: number;
+}
+
+const { label = 'figure', minWidth = 720 } = Astro.props;
+---
+
+<figure class="fig-frame">
+  <div class="fig-header" aria-hidden="true">
+    <span class="t-dot r"></span>
+    <span class="t-dot y"></span>
+    <span class="t-dot g"></span>
+    <span class="fig-label">{label}</span>
+  </div>
+  <div class="fig-scroll" style={`--fig-min: ${minWidth}px`}>
+    <slot />
+  </div>
+  {
+    Astro.slots.has('caption') && (
+      <figcaption>
+        <slot name="caption" />
+      </figcaption>
+    )
+  }
+</figure>
+
+<style>
+  .fig-frame {
+    margin: 0 0 var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-2);
+  }
+
+  .fig-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-1);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .t-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+
+  .t-dot.r {
+    background: #ff5f56;
+  }
+
+  .t-dot.y {
+    background: #ffbd2e;
+  }
+
+  .t-dot.g {
+    background: #27c93f;
+  }
+
+  .fig-label {
+    margin-left: var(--space-2);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .fig-scroll {
+    overflow-x: auto;
+    padding: var(--space-3) var(--space-2);
+  }
+
+  .fig-scroll :global(svg) {
+    display: block;
+    width: 100%;
+    min-width: var(--fig-min);
+    height: auto;
+  }
+
+  figcaption {
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-1);
+    border-top: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-faint);
+  }
+</style>

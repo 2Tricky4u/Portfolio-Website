@@ -6,10 +6,9 @@ updatedDate: 2026-06-09
 tags: [binary-analysis, ELF, reverse-engineering]
 ---
 
-import { Image } from 'astro:assets';
 import TerminalBlock from '../../components/TerminalBlock.astro';
 import Callout from '../../components/Callout.astro';
-import pipeline from './f1_1-2.png';
+import PipelineFigure from '../../components/PipelineFigure.astro';
 
 Notes on Chapter 1 of *Practical Binary Analysis* by Dennis Andriesse, plus my solutions to the exercises.
 
@@ -45,7 +44,7 @@ strip --strip-all <file>     # remove .symtab/.strtab  (runtime keeps .dynsym)
 
 ## Pipeline overview
 
-<Image src={pipeline} alt="The four stages of the GCC compilation pipeline: preprocessing, compilation, assembly, linking" />
+<PipelineFigure />
 
 ## Preprocessing
 

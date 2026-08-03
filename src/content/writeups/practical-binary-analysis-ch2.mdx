@@ -1,0 +1,492 @@
+---
+title: 'Practical Binary Analysis, Ch. 2: The ELF Format'
+description: 'Notes and solved exercises on the anatomy of a 64-bit ELF: the executable header, section headers vs program headers, the PLT/GOT lazy-binding dance, and what changes between C and C++ binaries, from Dennis Andriesse''s Practical Binary Analysis.'
+pubDate: 2026-08-03
+tags: [binary-analysis, ELF, reverse-engineering]
+---
+
+import TerminalBlock from '../../components/TerminalBlock.astro';
+import Callout from '../../components/Callout.astro';
+import ElfLayoutFigure from '../../components/ElfLayoutFigure.astro';
+import LazyBindingFigure from '../../components/LazyBindingFigure.astro';
+import DiskMemoryFigure from '../../components/DiskMemoryFigure.astro';
+
+Notes on Chapter 2 of *Practical Binary Analysis* by Dennis Andriesse, plus my solutions to the exercises.
+
+<TerminalBlock label="readelf: the ELF x-ray">
+```bash
+readelf -h <file>            # executable header (the 64-byte preamble)
+readelf -S --wide <file>     # section headers  (linker's view)
+readelf -l --wide <file>     # program headers + section→segment map (loader's view)
+readelf -x .shstrtab <file>  # hex dump the section-name string table
+readelf --relocs <file>      # relocation entries (.rela.dyn / .rela.plt)
+readelf --dynamic <file>     # .dynamic tags: the loader's road map
+readelf --syms <file>        # .symtab + .dynsym symbol tables
+```
+</TerminalBlock>
+
+<TerminalBlock label="objdump / xxd: bytes and disassembly">
+```bash
+xxd <file> | head                          # raw bytes: read the magic + e_ident by hand
+objdump -M intel -d <file>                  # disassemble .text (Intel syntax)
+objdump -M intel --section .plt -d <file>   # disassemble one section: the PLT trampolines
+objdump -d --section .init_array <file>     # dump the constructor pointer array
+c++filt <mangled>                           # demangle a C++ symbol back to its signature
+```
+</TerminalBlock>
+
+## A 64-bit ELF at a glance
+
+An ELF binary looks intimidating until you notice it is only **four kinds of thing**: one executable header, an optional table of program headers, the sections themselves, and an optional table of section headers (one per section). Two of those four are tables of fixed-size C structs; the header tells you where each table lives and how big its entries are.
+
+<ElfLayoutFigure />
+
+The two header tables encode the same file two ways. **Section headers** are the *link-time* view: fine-grained, one entry per named chunk, optional at runtime. **Program headers** are the *run-time* view: coarse segments the kernel actually `mmap`s. The book discusses sections first, then segments, and so will I.
+
+## The executable header
+
+Every ELF starts with an `Elf64_Ehdr`: a fixed 64-byte struct that says *this is an ELF*, *what kind*, and *where everything else is*. It is the one structure guaranteed to sit at a known location (offset 0), which is exactly why `file` and every loader can identify an ELF from its first bytes.
+
+<TerminalBlock label="readelf -h a.out">
+```bash
+ELF Header:
+  Magic:   7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00
+  Class:                             ELF64
+  Data:                              2's complement, little endian
+  Version:                           1 (current)
+  OS/ABI:                            UNIX - System V
+  ABI Version:                       0
+  Type:                              DYN (Position-Independent Executable file)
+  Machine:                           Advanced Micro Devices X86-64
+  Entry point address:               0x1060
+  Start of program headers:          64 (bytes into file)
+  Start of section headers:          13976 (bytes into file)
+  Size of this header:               64 (bytes)
+  Size of program headers:           56 (bytes)
+  Number of program headers:         13
+  Size of section headers:           64 (bytes)
+  Number of section headers:         31
+  Section header string table index: 30
+```
+</TerminalBlock>
+
+**`e_ident[16]`** — the first 16 bytes. Bytes 0–3 are the magic `7f 45 4c 46` (`\x7fELF`). Then `EI_CLASS` (`02` = `ELFCLASS64`), `EI_DATA` (`01` = `ELFDATA2LSB`, little-endian), `EI_VERSION` (`01` = `EV_CURRENT`), `EI_OSABI` (`00` = System V), `EI_ABIVERSION` (`00`), and seven `EI_PAD` bytes reserved as zero.
+
+**`e_type` / `e_machine` / `e_version`** — the binary's kind (`ET_REL` relocatable object, `ET_EXEC` fixed-address executable, `ET_DYN` shared object *or* PIE), its architecture (`EM_X86_64`), and the spec version (always 1).
+
+**`e_entry`** — the *virtual address* where execution starts once the loader is done, `0x1060` here, which is `_start` rather than `main`. Note it is an address, unlike the two file offsets that follow.
+
+**`e_phoff` / `e_shoff`** — *file offsets* (not addresses) to the program header table (64, right after the header) and section header table (13976, near the end). Either can be zero to mean "no such table."
+
+**`e_flags`** — architecture-specific flags. ARM binaries use it to signal ABI details (file format conventions, stack organization) to embedded operating systems; on x86-64 it is always zero, making it the one header field you can safely ignore.
+
+**`e_ehsize` and the `e_*entsize` / `e_*num` fields** — the header is 64 bytes; program headers are 56 bytes each and there are 13; section headers are 64 bytes each and there are 31. Entry-size plus count is all a tool needs to walk each table.
+
+**`e_shstrndx`** — the index (30) of the section header describing `.shstrtab`, the string table that stores every section's *name*. It bootstraps naming: to print section names, `readelf` first has to find the table of names, and this field is the pointer to it.
+
+<TerminalBlock label="readelf -x .shstrtab a.out — every section name, as one blob of C strings">
+```bash
+Hex dump of section '.shstrtab':
+  0x00000000 002e7379 6d746162 002e7374 72746162 ..symtab..strtab
+  0x00000010 002e7368 73747274 6162002e 696e7465 ..shstrtab..inte
+  0x00000020 7270002e 6e6f7465 2e676e75 2e70726f rp..note.gnu.pro
+  ...
+  0x000000e0 72616d65 002e696e 69745f61 72726179 rame..init_array
+  0x00000110 002e636f 6d6d656e 7400              ..comment.
+```
+</TerminalBlock>
+
+Note the leading `00`: by convention the first byte of a string table is NULL, so a `sh_name` of 0 naturally reads as the empty string. Every section name in the binary is one NULL-terminated run inside this single blob, and each `sh_name` is just a byte offset into it.
+
+<Callout title="ET_DYN: my binary is a PIE, the book's was ET_EXEC" variant="amber">
+  The book's example reads `Type: EXEC` with a hardcoded entry point of `0x400430`. Mine reads `Type: DYN` with entry `0x1060`, because every modern GCC (default `-fPIE -pie` since ~2016) emits a Position-Independent Executable: an `ET_DYN` shared object the kernel can load at a random ASLR base. That is the same `e_type` a shared library carries, so `e_type` alone no longer tells you "executable"; in practice a PIE also carries a `PT_INTERP` segment and a `DT_DEBUG` tag (visible in my `.dynamic` dump below) that a plain library does not. Build with `-no-pie` and the type flips back to `EXEC` with a fixed `0x401050` base, matching the book's era.
+</Callout>
+
+<Callout title="Reading e_ident straight from xxd" variant="blue">
+  `xxd a.out | head` shows `7f45 4c46 0201 0100` as the first eight bytes: magic `7f 45 4c 46`, then `02` (64-bit), `01` (little-endian), `01` (version 1), `00` (System V ABI). Offset `0x10` starts the multibyte fields, which are little-endian and so read backward: the bytes `03 00` are `e_type` = `0x0003` = `ET_DYN`, and `3e 00` are `e_machine` = `0x3e` = 62 = `EM_X86_64`. The entire header is legible by hand once you know the struct layout.
+</Callout>
+
+## Section headers
+
+The code and data are carved into contiguous, non-overlapping **sections**. A section has no mandated internal structure — often it is just a blob — but every section is *described* by a fixed `Elf64_Shdr` in the section header table. Crucially, sections are a convenience for the **linker** and for static analysis tools; the kernel does not need them to run a process. That is why the whole section header table is **optional**: a binary that never needs linking can drop it and set `e_shoff` to zero.
+
+The `Elf64_Shdr` fields worth knowing:
+
+- **`sh_name`** — index into `.shstrtab` for this section's name (0 = unnamed).
+- **`sh_type`** — what the section holds: `SHT_PROGBITS` (code or initialized data, no special structure), `SHT_SYMTAB` / `SHT_DYNSYM` (symbol tables), `SHT_STRTAB` (string tables), `SHT_REL` / `SHT_RELA` (relocation entries), `SHT_DYNAMIC` (dynamic-linking info), `SHT_NOBITS` (occupies no file bytes — `.bss`).
+- **`sh_flags`** — `SHF_WRITE` (writable at runtime), `SHF_ALLOC` (gets loaded into memory — though loading happens via *segments*, not this flag directly), `SHF_EXECINSTR` (contains instructions). Shown by `readelf` as `W` / `A` / `X`.
+- **`sh_addr` / `sh_offset` / `sh_size`** — virtual address at runtime, file offset, byte size. Sections never loaded into memory have `sh_addr = 0`.
+- **`sh_link` / `sh_info`** — cross-references between related sections. A symbol table links to its string table; a relocation section's `sh_info` names the section it patches.
+- **`sh_addralign` / `sh_entsize`** — required alignment (power of two, or 0/1 for none) and, for table-shaped sections, the size of one entry.
+
+<Callout title="Section names are attacker-controllable — don't trust them" variant="red">
+  `sh_name` is just an index into a string table the file itself carries. Nothing binds a section named `.text` to actually containing code, or `.rodata` to being read-only. When analyzing malware the section names are frequently forged to mislead. The `sh_type` and `sh_flags` fields, and the actual segment mapping, are far harder to fake convincingly than a name.
+</Callout>
+
+## A tour of the sections
+
+<TerminalBlock label="readelf -S --wide a.out">
+```bash
+There are 31 section headers, starting at offset 0x3698:
+
+  [Nr] Name          Type        Address           Off    Size   ES Flg Lk Inf Al
+  [ 0]               NULL        0000000000000000  000000 000000 00      0  0   0
+  [ 1] .interp       PROGBITS    0000000000000318  000318 00001c 00   A  0  0   1
+  [ 5] .gnu.hash     GNU_HASH    00000000000003b0  0003b0 000024 00   A  6  0   8
+  [ 6] .dynsym       DYNSYM      00000000000003d8  0003d8 0000a8 18   A  7  1   8
+  [ 7] .dynstr       STRTAB      0000000000000480  000480 00008d 00   A  0  0   1
+  [10] .rela.dyn     RELA        0000000000000550  000550 0000c0 18   A  6  0   8
+  [11] .rela.plt     RELA        0000000000000610  000610 000018 18  AI  6 24   8
+  [12] .init         PROGBITS    0000000000001000  001000 00001b 00  AX  0  0   4
+  [13] .plt          PROGBITS    0000000000001020  001020 000020 10  AX  0  0  16
+  [16] .text         PROGBITS    0000000000001060  001060 000112 00  AX  0  0  16
+  [17] .fini         PROGBITS    0000000000001174  001174 00000d 00  AX  0  0   4
+  [18] .rodata       PROGBITS    0000000000002000  002000 000012 00   A  0  0   4
+  [21] .init_array   INIT_ARRAY  0000000000003db8  002db8 000008 08  WA  0  0   8
+  [23] .dynamic      DYNAMIC     0000000000003dc8  002dc8 0001f0 10  WA  7  0   8
+  [24] .got          PROGBITS    0000000000003fb8  002fb8 000048 08  WA  0  0   8
+  [25] .data         PROGBITS    0000000000004000  003000 000010 00  WA  0  0   8
+  [26] .bss          NOBITS      0000000000004010  003010 000008 00  WA  0  0   1
+  [28] .symtab       SYMTAB      0000000000000000  003040 000360 18     29 18   8
+  [30] .shstrtab     STRTAB      0000000000000000  00357b 00011a 00      0  0   1
+```
+</TerminalBlock>
+
+The first entry is always the reserved `SHT_NULL` — all zeros, no name, no bytes. It exists so that section index 0 can serve as `SHN_UNDEF`, the "no such section" value that fields like `sh_link` use when they reference nothing.
+
+**`.init` / `.fini`** — executable code (flag `X`) that runs before and after `main`, respectively. Think constructor and destructor for the whole process. `.init` is invoked from libc's startup path, so it has finished before `main` is ever entered.
+
+**`.text`** — the program's actual instructions. `SHT_PROGBITS`, flags `AX` (alloc + execute, notably **not** write). Besides your compiled code it carries GCC's standard scaffolding: `_start`, `register_tm_clones`, `frame_dummy`. `_start`, not `main`, is where the entry point lands.
+
+<TerminalBlock label="objdump -M intel -d a.out — _start reaches main indirectly">
+```asm
+0000000000001060 <_start>:
+    1060:  endbr64
+    1064:  xor    ebp,ebp                       ; mark outermost frame for unwinders
+    1069:  pop    rsi                           ; argc → rsi
+    106a:  mov    rdx,rsp                       ; argv → rdx (rest of the initial stack)
+    106d:  and    rsp,0xfffffffffffffff0         ; 16-byte align the stack
+    1078:  lea    rdi,[rip+0xca]        # 1149 <main>   ; hand main's address to libc
+    107f:  call   QWORD PTR [rip+0x2f53] # 3fd8 <__libc_start_main@GLIBC_2.34>
+    1085:  hlt                                   ; unreachable: libc calls exit for us
+
+0000000000001149 <main>:
+    1149:  endbr64
+    114d:  push   rbp
+    1151:  sub    rsp,0x10
+    115c:  lea    rax,[rip+0xea1]        # 2004   ; "Hello, world!"
+    1166:  call   1050 <puts@plt>                ; printf("...\n") → puts
+    116b:  mov    eax,0x0                         ; return 0
+    1171:  ret
+```
+</TerminalBlock>
+
+<Callout title="The entry point is _start, and it never returns to itself" variant="teal">
+  `e_entry` is `0x1060` = `_start`, injected by the CRT (`crt1.o`), not written by you. It loads the address of `main` into `rdi` (first integer argument) and hands it to `__libc_start_main`, which sets up `atexit`, runs constructors, then calls `main`. When `main` returns, libc calls `exit` — so the `hlt` right after the `call` in `_start` is genuinely dead code, a backstop that should never execute.
+</Callout>
+
+**`.rodata` / `.data` / `.bss`** — read-only constants (not writable), initialized globals (writable, `SHT_PROGBITS`), and uninitialized globals. `.bss` is special: type `SHT_NOBITS`, it occupies **zero bytes on disk**. It is a directive to allocate and zero a block of memory at load time, nothing more.
+
+Keeping constants out of the code section is a convention, not a rule. Modern gcc and clang do not mix the two, but Visual Studio sometimes emits read-only data *inside* `.text`, which is a real problem for disassembly: once data sits in an executable section there is no reliable way to tell which bytes are instructions and which are constants, and a linear disassembler will happily decode a string table as machine code.
+
+<TerminalBlock label="readelf -x .rodata a.out — the string literal, in place">
+```bash
+Hex dump of section '.rodata':
+  0x00002000 01000200 48656c6c 6f2c2077 6f726c64 ....Hello, world
+  0x00002010 2100                                !.
+```
+</TerminalBlock>
+
+### Lazy binding: `.plt`, `.got`, `.got.plt`
+
+External function addresses aren't known until libraries are mapped, and even then Linux defers resolution until the **first call** — *lazy binding*. It is implemented with the help of two special sections: the Procedure Linkage Table (**`.plt`**), executable code holding one small stub per imported function, and the Global Offset Table (**`.got`**), writable data holding the resolved pointers. The GOT is split in two by what it points at: `.got` proper holds *data* references, which the code reads directly with no PLT stub in between, while **`.got.plt`** is dedicated to *function* addresses reached through the PLT. A call to `puts` goes to `puts@plt`, which jumps through its `.got.plt` slot. Initially that slot points *back into the PLT*, to a `push`/`jmp` that invokes the dynamic linker; the resolver looks up the real `puts`, overwrites the slot, and every later call jumps straight to libc.
+
+<LazyBindingFigure />
+
+<TerminalBlock label="objdump --section .plt -d lazy.out — the trampoline (built -z lazy)">
+```asm
+0000000000001020 <.plt>:               ; PLT[0] = the common resolver stub
+    1020:  push   QWORD PTR [rip+0x22f2]   # 3318 <_GLOBAL_OFFSET_TABLE_+0x8>
+    1026:  bnd jmp QWORD PTR [rip+0x22f3]  # 3320 <_GLOBAL_OFFSET_TABLE_+0x10>  → ld.so
+    102d:  nop
+
+    1030:  endbr64                        ; puts@plt stub
+    1034:  push   0x0                      ; reloc index 0 → which symbol to resolve
+    1039:  bnd jmp 1020 <_init+0x20>       ; fall through to the resolver above
+```
+</TerminalBlock>
+
+<TerminalBlock label="readelf --relocs — the jump slot the stub consumes">
+```bash
+Relocation section '.rela.plt' contains 1 entry:
+  Offset          Info           Type              Sym. Name + Addend
+000000003328  000300000007 R_X86_64_JUMP_SLO   puts@GLIBC_2.2.5 + 0
+```
+</TerminalBlock>
+
+The `push 0x0` is the *index* of that `R_X86_64_JUMP_SLO` relocation — it tells the resolver *which* symbol (`puts`) to bind. Offset `0x3328` is the `.got.plt` slot the stub jumps through; before binding it holds `0x1030`, the top of that very `push`/`jmp` stub, so the first indirect jump lands right back in the PLT and falls into the resolver path. After binding it holds the real `puts`.
+
+<Callout title="Why the GOT exists at all: security + shareability" variant="blue">
+  Two reasons the resolved address goes into a writable *data* slot rather than being patched into the code. **Security:** patching `.plt` would require executable sections to be writable — exactly the W^X violation an attacker wants. Routing through `.got.plt` keeps code read-only; the worst an attacker gets by corrupting the GOT is redirecting a pointer, not injecting code. **Shareability:** one physical copy of libc is mapped at a *different* virtual address in every process, so a resolved address is per-process. Each process has its own private GOT; the shared read-only code stays identical across all of them.
+</Callout>
+
+<Callout title="My toolchain hides the trampoline: RELRO + .plt.sec" variant="amber">
+  Default GCC 11 doesn't produce the classic lazy PLT the book shows. It links with **full RELRO + BIND_NOW** (`readelf --dynamic` shows `FLAGS: BIND_NOW`, `FLAGS_1: NOW PIE`), so all relocations happen at load time and the GOT is made read-only afterward — there is no lazy resolution left to observe, and no `.got.plt` at all: everything folds into a single read-only `.got`. It also splits the PLT: `.plt` keeps the resolver machinery while a second **`.plt.sec`** holds the actual call targets (each an `endbr64; bnd jmp [GOT]`). That split comes from Intel CET **indirect branch tracking** (`-fcf-protection`, on by default here), where `endbr64` is the landing pad that makes a stub a legal indirect-branch target — `.plt.sec` shows up in *both* of my builds, so it tracks IBT, not the binding mode. I forced `-Wl,-z,lazy,-z,norelro` above to reproduce the book-era trampoline. The lesson: what the book calls "default" lazy binding is now opt-in.
+</Callout>
+
+### `.rela.*`, `.dynamic`, `.init_array`
+
+**`.rela.dyn` / `.rela.plt`** — tables of `Elf64_Rela` relocation entries. In a linked executable only *dynamic* relocations survive; the static ones were resolved at link time.
+
+<TerminalBlock label="readelf --relocs a.out — .rela.dyn">
+```bash
+Relocation section '.rela.dyn' contains 8 entries:
+  Offset          Info           Type              Sym. Name + Addend
+000000003db8  000000000008 R_X86_64_RELATIVE                     1140   ← no symbol
+000000003dc0  000000000008 R_X86_64_RELATIVE                     1100
+000000004008  000000000008 R_X86_64_RELATIVE                     4008
+000000003fd8  000100000006 R_X86_64_GLOB_DAT   __libc_start_main@GLIBC_2.34 + 0
+000000003fe8  000400000006 R_X86_64_GLOB_DAT   __gmon_start__ + 0
+000000003ff8  000600000006 R_X86_64_GLOB_DAT   __cxa_finalize@GLIBC_2.2.5 + 0
+```
+</TerminalBlock>
+
+`R_X86_64_GLOB_DAT` fills a `.got` slot with a resolved address. The book presents this as the data-symbol case, but in the dump above every one of them is a *function* (`__libc_start_main`, `__cxa_finalize`), because eager binding routes function pointers through `.got` rather than `.got.plt`. `R_X86_64_JUMP_SLO` (a "jump slot") fills a `.got.plt` slot with a library function's address and is the relocation the PLT trampoline consumes. `R_X86_64_RELATIVE` entries carry no symbol at all: the loader simply adds the randomized load base to a stored offset, which is why a PIE accumulates them and the book's `ET_EXEC` example has none.
+
+**`.dynamic`** — the loader's road map: a table of `(tag, value)` pairs (`Elf64_Dyn`). `DT_NEEDED` names each required shared library; `DT_STRTAB`/`DT_SYMTAB`/`DT_PLTGOT`/`DT_RELA` point the loader at the dynamic string table, symbol table, GOT, and relocation table.
+
+<TerminalBlock label="readelf --dynamic a.out (excerpt)">
+```bash
+ (NEEDED)      Shared library: [libc.so.6]
+ (INIT)        0x1000
+ (INIT_ARRAY)  0x3db8
+ (PLTGOT)      0x3fb8
+ (FLAGS)       BIND_NOW
+ (FLAGS_1)     Flags: NOW PIE
+```
+</TerminalBlock>
+
+**`.init_array` / `.fini_array`** — arrays of function pointers run before `main` (constructors) and after (destructors). Unlike the single `.init` function, these hold as many pointers as you like; a C function tagged `__attribute__((constructor))` lands here. Because they're just writable pointer arrays, they're a favorite hook target for injecting behavior.
+
+<TerminalBlock label="objdump -d --section .init_array a.out — a single little-endian pointer">
+```asm
+0000000000003db8 <__frame_dummy_init_array_entry>:
+    3db8:  40 11 00 00 00 00 00 00       ; = 0x1140, byte-reversed
+
+0000000000001140 <frame_dummy>:          ; the pointer resolves to frame_dummy
+```
+</TerminalBlock>
+
+**`.shstrtab` / `.symtab` / `.strtab` / `.dynsym` / `.dynstr`** — string and symbol tables. `.symtab` + `.strtab` are the *static* symbol table and its strings, used for linking and debugging, and **removed by stripping**. `.dynsym` + `.dynstr` are the *dynamic* equivalents the loader needs at runtime, so they **cannot** be stripped. The section type is the tell: `strip` removes `SHT_SYMTAB` but never `SHT_DYNSYM`.
+
+## Program headers
+
+The program header table is the **segment** view: what the OS and dynamic linker actually consume when loading the binary. A **segment** bundles zero or more sections into one chunk; the loadable ones group sections sharing a permission class so each can be mapped with a single `mmap`. Segments exist only for executable/loadable ELFs — a relocatable `.o` has none.
+
+<TerminalBlock label="readelf -l --wide a.out">
+```bash
+Program Headers:
+  Type         Offset   VirtAddr           FileSiz  MemSiz   Flg  Align
+  PHDR         0x000040 0x0000000000000040 0x0002d8 0x0002d8 R    0x8
+  INTERP       0x000318 0x0000000000000318 0x00001c 0x00001c R    0x1
+      [Requesting program interpreter: /lib64/ld-linux-x86-64.so.2]
+  LOAD         0x000000 0x0000000000000000 0x000628 0x000628 R    0x1000
+  LOAD         0x001000 0x0000000000001000 0x000181 0x000181 R E  0x1000   ← code  r-x
+  LOAD         0x002000 0x0000000000002000 0x0000f4 0x0000f4 R    0x1000   ← rodata r
+  LOAD         0x002db8 0x0000000000003db8 0x000258 0x000260 RW   0x1000   ← data  rw-
+  DYNAMIC      0x002dc8 0x0000000000003dc8 0x0001f0 0x0001f0 RW   0x8
+  GNU_RELRO    0x002db8 0x0000000000003db8 0x000248 0x000248 R    0x1
+
+ Section to Segment mapping:
+   02  .interp .note.gnu.property .note.gnu.build-id .note.ABI-tag .gnu.hash
+       .dynsym .dynstr .gnu.version .gnu.version_r .rela.dyn .rela.plt
+   03  .init .plt .plt.got .plt.sec .text .fini
+   04  .rodata .eh_frame_hdr .eh_frame
+   05  .init_array .fini_array .dynamic .got .data .bss
+```
+</TerminalBlock>
+
+- **`p_type`** — `PT_LOAD` (map this into memory), `PT_INTERP` (the `.interp` string naming `ld.so`), `PT_DYNAMIC` (wraps `.dynamic`), `PT_PHDR` (the header table itself). A modern binary has several `PT_LOAD`s split by permission.
+- **`p_flags`** — `PF_R` / `PF_W` / `PF_X`. Note `readelf` prints execute as `E`, and code segments are `R E` (never `W`); data is `RW` (never `X`).
+- **`p_offset` / `p_vaddr` / `p_filesz` / `p_memsz`** — file offset, load address, size on disk, size in memory. `p_paddr` is unused on Linux (all virtual memory).
+- **`p_align`** — power-of-two segment alignment; `p_vaddr ≡ p_offset (mod p_align)`.
+
+<Callout title="p_memsz > p_filesz is where .bss lives" variant="teal">
+  The writable `LOAD` segment reads `FileSiz 0x258` but `MemSiz 0x260` — eight bytes larger. That gap is exactly `.bss`: `SHT_NOBITS`, no file bytes, but the loader allocates and zero-fills the extra range at the end of the segment. This is the whole reason the two size fields are distinct: one counts bytes read from disk, the other counts bytes reserved in RAM.
+</Callout>
+
+<Callout title="One file, two organizations — and they don't nest cleanly" variant="blue">
+  The same `.dynamic` bytes appear in three segments: its own `PT_DYNAMIC`, a `PT_LOAD`, and `GNU_RELRO`. Segments freely overlap sections because they answer different questions — "what has permission X" vs "what is chunk Y." Sections are the linker's fine-grained catalog; segments are the loader's coarse permission map. `GNU_RELRO` marks the sub-range (`.init_array`, `.dynamic`, `.got`) that starts writable for relocation, then is flipped read-only once binding finishes.
+</Callout>
+
+## Exercises
+
+### 1. Manual header inspection
+
+> Use a hex viewer such as xxd to view the bytes in an ELF binary in hexadecimal format. [...] Can you identify the bytes representing the ELF header? Try to find all of the ELF header fields in the xxd output and see whether the contents of those fields make sense to you.
+
+<TerminalBlock label="xxd a.out | head — the first 64 bytes ARE the header">
+```text
+00000000: 7f45 4c46 0201 0100 0000 0000 0000 0000  .ELF............
+00000010: 0300 3e00 0100 0000 6010 0000 0000 0000  ..>.....`.......
+00000020: 4000 0000 0000 0000 9836 0000 0000 0000  @........6......
+00000030: 0000 0000 4000 3800 0d00 4000 1f00 1e00  ....@.8...@.....
+```
+</TerminalBlock>
+
+Decoding it field by field, remembering x86-64 is **little-endian** so multibyte values are byte-reversed:
+
+<TerminalBlock label="the 64 bytes, annotated">
+```text
+7f 45 4c 46          e_ident[0..3]  magic  \x7f E L F
+02                   EI_CLASS       ELFCLASS64
+01                   EI_DATA        ELFDATA2LSB (little-endian)
+01                   EI_VERSION     EV_CURRENT
+00 00                EI_OSABI/ABIV  System V, version 0
+00 00 00 00 00 00 00 EI_PAD         reserved zeros
+0300                 e_type         0x0003 = ET_DYN   (PIE)
+3e00                 e_machine      0x003e = 62 = EM_X86_64
+01000000             e_version      1
+6010000000000000     e_entry        0x1060   ← _start
+4000000000000000     e_phoff        0x40 = 64      (phdrs follow the header)
+9836000000000000     e_shoff        0x3698 = 13976 (shdrs near EOF)
+00000000             e_flags        0 (x86 uses none)
+4000                 e_ehsize       0x40 = 64 bytes
+3800                 e_phentsize    0x38 = 56 bytes
+0d00                 e_phnum        13 program headers
+4000                 e_shentsize    0x40 = 64 bytes
+1f00                 e_shnum        0x1f = 31 sections
+1e00                 e_shstrndx     0x1e = 30  → .shstrtab
+```
+</TerminalBlock>
+
+Every value cross-checks against `readelf -h`: entry `0x1060`, 13 program headers of 56 bytes, 31 sections of 64 bytes, string table at index 30. The header is completely legible by hand.
+
+### 2. Sections and segments
+
+> Use readelf to view the sections and segments in an ELF binary. How are the sections mapped into segments? [...] What are the major differences?
+
+Sections are the **link-time** catalog; segments are the **run-time** grouping. The loader ignores sections entirely and maps `PT_LOAD` segments by permission. The section→segment map above shows the bundling: eleven read-only metadata sections collapse into one `R` load, all six executable sections into one `R E` load, the constants into a second `R` load, and all writable data into one `RW` load.
+
+<DiskMemoryFigure />
+
+The major differences: (1) **granularity** — dozens of sections collapse into ~4 loadable segments; (2) **what survives** — `.symtab`, `.strtab`, `.shstrtab`, `.comment` sit in no `PT_LOAD` and never reach RAM; (3) **`.bss`** — present in the segment's `memsz` but not its `filesz`, so it costs disk nothing and is zero-filled on load.
+
+### 3. C and C++ binaries
+
+> Use readelf to disassemble two binaries, namely a binary produced from C source and one produced from C++ source. What differences are there?
+
+Same trivial "Hello, world!" compiled with `gcc` vs `g++`. Five differences stand out.
+
+**Dependencies** — the C++ binary pulls in the C++ runtime:
+
+<TerminalBlock label="readelf --dynamic | grep NEEDED">
+```bash
+# hello.c  (gcc)
+ (NEEDED)  Shared library: [libc.so.6]
+
+# hellopp.cpp  (g++)
+ (NEEDED)  Shared library: [libstdc++.so.6]     ← iostreams, RTTI, EH
+ (NEEDED)  Shared library: [libc.so.6]
+```
+</TerminalBlock>
+
+**Name mangling** — C symbols are bare; C++ encodes the full signature into the symbol so overloads don't collide:
+
+<TerminalBlock label="readelf --syms hellopp — mangled imports, and c++filt">
+```bash
+UND _ZSt4endlIcSt11char_traitsIcEERSt13basic_ostreamIT_T0_ES6_@GLIBCXX_3.4
+UND _ZNSolsEPFRSoS_E@GLIBCXX_3.4
+UND _ZNSt8ios_base4InitC1Ev@GLIBCXX_3.4          ; std::ios_base::Init ctor
+
+$ echo _ZSt4endlIcSt11char_traitsIcEERSt13basic_ostreamIT_T0_ES6_ | c++filt
+std::basic_ostream<char, std::char_traits<char> >&
+    std::endl<char, std::char_traits<char> >(std::basic_ostream<char, ...>&)
+```
+</TerminalBlock>
+
+**More imports** — `.dynsym` grows from 7 entries to 13. Discounting the reserved null entry, that is 6 imports for C against 11 for C++, the extras being `operator<<`, `std::endl`, `ios_base::Init`'s constructor and destructor, and `__cxa_atexit`.
+
+**Extra constructors** — g++ adds a per-translation-unit static initializer that runs before `main`, so `.init_array` doubles in size from one pointer to two:
+
+<TerminalBlock label="the C++ static initializer in .init_array">
+```bash
+# hello.c    .init_array  size 0x08 → 1 entry  (frame_dummy)
+# hellopp    .init_array  size 0x10 → 2 entries (frame_dummy + _GLOBAL__sub_I_main)
+
+_GLOBAL__sub_I_main  →  _Z41__static_initialization_and_destruction_0ii
+                        # runs the std::ios_base::Init guard that readies cout, before main
+```
+</TerminalBlock>
+
+**A copy relocation for `std::cout`** — `std::cout` is a global *object* defined in libstdc++, but the executable's code wants a fixed, link-time-known address for it. The linker reserves room in the executable's own `.bss` and emits `R_X86_64_COPY`; at load time `ld.so` copies the object's bytes out of the library into that slot. It is the case where a symbol appears in `.dynsym` as *defined by the executable* while really belonging to a library — every other import in this binary is `UND`:
+
+<TerminalBlock label="readelf --relocs hellopp — the copy relocation">
+```bash
+000000004040  000c00000005 R_X86_64_COPY   _ZSt4cout@GLIBCXX_3.4 + 0
+#        ↑ 0x4040 is inside the C++ binary's own .bss (NOBITS, addr 0x4040)
+```
+</TerminalBlock>
+
+<Callout title="C++ is C plus a runtime that runs before main" variant="teal">
+  Every difference traces to one fact: C++ has global objects with constructors. `std::cout` must be alive before `main` uses it, so g++ emits `_GLOBAL__sub_I_main`, wires it into `.init_array`, and links `libstdc++` to provide `ios_base::Init`. Mangling exists because those runtime symbols are overloaded and templated — `operator<<` has dozens of forms that must stay distinct in the symbol table. Strip the binary and the mangled *local* symbols vanish, but the `UND` imports in `.dynsym` remain, because the loader still needs them.
+</Callout>
+
+### 4. Lazy binding
+
+> Use objdump to disassemble the PLT section of an ELF binary. Which GOT entries do the PLT stubs use? Now view the contents of those GOT entries (again with objdump) and analyze their relationship with the PLT.
+
+Using the lazy-linked build (`-Wl,-z,lazy,-z,norelro`) so the trampoline is intact. `main` calls `puts@plt`; that stub jumps through a `.got.plt` slot:
+
+<TerminalBlock label="the PLT stub and the GOT slot it reads">
+```asm
+; main
+    1166:  call   1050 <puts@plt>
+
+; puts@plt  (in .plt.sec)  → indirect jump through the GOT
+0000000000001050 <puts@plt>:
+    1050:  endbr64
+    1054:  bnd jmp QWORD PTR [rip+0x22cd]   # 3328 <puts@GLIBC_2.2.5>
+                                            #   ↑ the .got.plt slot at 0x3328
+```
+</TerminalBlock>
+
+The relocation table confirms slot `0x3328` is `puts`'s jump slot; now read the slot's raw bytes:
+
+<TerminalBlock label="readelf --relocs + readelf -x .got.plt">
+```bash
+Relocation section '.rela.plt' contains 1 entry:
+  Offset          Type              Sym. Name + Addend
+000000003328  R_X86_64_JUMP_SLO   puts@GLIBC_2.2.5 + 0
+
+Hex dump of section '.got.plt':
+  0x00003310 08310000 00000000 00000000 00000000
+  0x00003320 00000000 00000000 30100000 00000000
+
+#  0x3310  GOT[0] = 0x3108  → &_DYNAMIC (matches .dynamic's address)
+#  0x3318  GOT[1] = 0       → link_map ptr, filled in by ld.so at load time
+#  0x3320  GOT[2] = 0       → &_dl_runtime_resolve, filled in by ld.so
+#  0x3328  GOT[3] = 0x1030  → puts's slot: points back into the PLT, not at libc
+```
+</TerminalBlock>
+
+The first three slots are the ABI-mandated header: `_DYNAMIC` plus two entries `ld.so` fills at load time, which is exactly what `PLT[0]` pushes and jumps through. The slot that matters here is `0x3328`, and it holds `0x00001030` — **not** the address of `puts`, but the top of the very PLT stub that jumped through it, whose `push 0x0; jmp PLT[0]` leads to the resolver. So on the **first** call:
+
+<TerminalBlock label="the lazy-binding round trip">
+```text
+  call puts@plt
+    └─ jmp [0x3328]            ; GOT slot → 0x1030 (still points back into the PLT)
+         └─ push 0x0           ; reloc index for puts
+              └─ jmp PLT[0]    ; common stub
+                   └─ push GOT[1]; jmp [GOT[2]]  → ld.so resolver
+                        └─ ld.so finds puts, OVERWRITES [0x3328] with its real address,
+                           then jumps to puts
+
+  every later call:
+    jmp [0x3328]               ; now → libc puts directly, resolver never runs again
+```
+</TerminalBlock>
+
+<Callout title="The GOT slot points backward until it doesn't" variant="teal">
+  The relationship is a self-modifying redirect. `.got.plt[puts]` starts holding an address *inside its own PLT stub*, so the first indirect jump lands one instruction past where it came from — a deliberately roundabout path whose only purpose is to reach the resolver with an identifier on the stack. The resolver's write turns that slot into a direct pointer to libc. The PLT code never changes (it stays read-only); only the writable GOT data flips. That's lazy binding in one sentence: pay the resolver cost once, per symbol, on first use — and only for symbols you actually call.
+</Callout>

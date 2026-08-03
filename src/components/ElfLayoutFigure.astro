@@ -1,0 +1,276 @@
+---
+import FigureFrame from './FigureFrame.astro';
+
+interface Props {
+  label?: string;
+}
+
+const { label = 'fig 2-1 · a 64-bit elf binary at a glance' } = Astro.props;
+---
+
+<FigureFrame label={label}>
+  <svg
+    viewBox="0 0 936 540"
+    role="img"
+    aria-label="The anatomy of a 64-bit ELF binary. The executable header sits at file offset 0 and points via e_phoff to the program header table, the loader's view describing segments to map, and via e_shoff to the section header table, the linker's view holding one header per section. Between the two tables sit the sections themselves, the actual code and data, named via the .shstrtab section that e_shstrndx locates."
+  >
+    <defs>
+      <marker
+        id="el-arrow"
+        markerUnits="userSpaceOnUse"
+        markerWidth="9"
+        markerHeight="9"
+        refX="8.5"
+        refY="4.5"
+        orient="auto"
+      >
+        <path d="M0,0 L9,4.5 L0,9 Z" class="arrow-head"></path>
+      </marker>
+      <marker
+        id="el-arrow-teal"
+        markerUnits="userSpaceOnUse"
+        markerWidth="9"
+        markerHeight="9"
+        refX="8.5"
+        refY="4.5"
+        orient="auto"
+      >
+        <path d="M0,0 L9,4.5 L0,9 Z" class="arrow-head-teal"></path>
+      </marker>
+      <pattern id="el-grid" width="22" height="22" patternUnits="userSpaceOnUse">
+        <circle cx="1.5" cy="1.5" r="1" class="grid-dot"></circle>
+      </pattern>
+    </defs>
+
+    <rect x="0" y="0" width="936" height="540" fill="url(#el-grid)"></rect>
+
+    <!-- executable header -->
+    <rect class="box proc-teal" x="200" y="36" width="300" height="76" rx="6"></rect>
+    <text class="title lbl-teal" x="350" y="64">executable header</text>
+    <text class="sub" x="350" y="82">Elf64_Ehdr · 64 bytes · always at file offset 0</text>
+    <text class="fields" x="350" y="100">e_entry · e_phoff · e_shoff · e_shstrndx</text>
+    <line class="tick" x1="500" y1="60" x2="524" y2="60"></line>
+    <text class="note" x="530" y="64">the only fixed-position structure;</text>
+    <text class="note" x="530" y="80">everything else is found via offsets</text>
+
+    <!-- program header table -->
+    <rect class="box proc-amber" x="200" y="128" width="300" height="100" rx="6"></rect>
+    <text class="title lbl-amber" x="350" y="152">program header table</text>
+    <text class="sub" x="350" y="170">e_phnum × Elf64_Phdr · 56 bytes each</text>
+    <g>
+      <rect class="chip" x="216" y="186" width="76" height="22" rx="4"></rect>
+      <text class="chip-text" x="254" y="201">PT_LOAD</text>
+      <rect class="chip" x="304" y="186" width="76" height="22" rx="4"></rect>
+      <text class="chip-text" x="342" y="201">PT_INTERP</text>
+      <rect class="chip" x="392" y="186" width="76" height="22" rx="4"></rect>
+      <text class="chip-text" x="430" y="201">PT_DYNAMIC</text>
+      <text class="sub" x="482" y="201">…</text>
+    </g>
+    <line class="tick" x1="500" y1="148" x2="524" y2="148"></line>
+    <text class="view-tag lbl-amber" x="530" y="152">LOADER'S VIEW · SEGMENTS</text>
+    <text class="note" x="530" y="168">what to mmap, with which permissions</text>
+
+    <!-- sections -->
+    <rect class="box box-sections" x="200" y="244" width="300" height="152" rx="6"></rect>
+    <text class="title lbl-green" x="350" y="268">sections</text>
+    <text class="sub" x="350" y="286">the actual code + data · no mandated structure</text>
+    <g>
+      <rect class="chip" x="216" y="298" width="84" height="22" rx="4"></rect>
+      <text class="sect-name" x="258" y="313">.interp</text>
+      <rect class="chip" x="312" y="298" width="84" height="22" rx="4"></rect>
+      <text class="sect-name" x="354" y="313">.init</text>
+      <rect class="chip" x="408" y="298" width="84" height="22" rx="4"></rect>
+      <text class="sect-name" x="450" y="313">.plt</text>
+      <rect class="chip" x="216" y="328" width="84" height="22" rx="4"></rect>
+      <text class="sect-name" x="258" y="343">.text</text>
+      <rect class="chip" x="312" y="328" width="84" height="22" rx="4"></rect>
+      <text class="sect-name" x="354" y="343">.fini</text>
+      <rect class="chip" x="408" y="328" width="84" height="22" rx="4"></rect>
+      <text class="sect-name" x="450" y="343">.rodata</text>
+      <rect class="chip" x="216" y="358" width="84" height="22" rx="4"></rect>
+      <text class="sect-name" x="258" y="373">.data</text>
+      <rect class="chip" x="312" y="358" width="84" height="22" rx="4"></rect>
+      <text class="sect-name" x="354" y="373">.bss</text>
+      <rect class="chip chip-strtab" x="408" y="358" width="84" height="22" rx="4"></rect>
+      <text class="sect-name" x="450" y="373">.shstrtab</text>
+    </g>
+    <line class="tick" x1="500" y1="264" x2="524" y2="264"></line>
+    <text class="note" x="530" y="268">contiguous, non-overlapping blobs;</text>
+    <text class="note" x="530" y="284">named by entries in .shstrtab</text>
+
+    <!-- section header table -->
+    <rect class="box proc-blue" x="200" y="440" width="300" height="76" rx="6"></rect>
+    <text class="title lbl-blue" x="350" y="464">section header table</text>
+    <text class="sub" x="350" y="482">e_shnum × Elf64_Shdr · 64 bytes each</text>
+    <line class="tick" x1="500" y1="460" x2="524" y2="460"></line>
+    <text class="view-tag lbl-blue" x="530" y="464">LINKER'S VIEW · SECTIONS</text>
+    <text class="note" x="530" y="480">optional at runtime: e_shoff can be 0</text>
+
+    <!-- e_phoff / e_shoff pointer elbows -->
+    <path class="ptr" d="M200,88 L152,88 L152,178 L196,178" marker-end="url(#el-arrow)"></path>
+    <text class="ptr-label lbl-amber" x="144" y="182" text-anchor="end">e_phoff</text>
+    <path class="ptr" d="M200,102 L112,102 L112,478 L196,478" marker-end="url(#el-arrow)"></path>
+    <text class="ptr-label lbl-blue" x="104" y="482" text-anchor="end">e_shoff</text>
+
+    <!-- one Elf64_Shdr per section -->
+    <line class="ptr ptr-dash" x1="240" y1="436" x2="240" y2="400" marker-end="url(#el-arrow)"></line>
+    <line class="ptr ptr-dash" x1="320" y1="436" x2="320" y2="400" marker-end="url(#el-arrow)"></line>
+    <text class="ptr-label" x="340" y="422">one per section</text>
+
+    <!-- e_shstrndx picks the name table -->
+    <line class="ptr ptr-dash ptr-teal" x1="450" y1="436" x2="450" y2="384" marker-end="url(#el-arrow-teal)"></line>
+    <text class="ptr-label lbl-teal" x="462" y="422">e_shstrndx</text>
+  </svg>
+  <span slot="caption">
+    One executable header, two optional tables, and the sections they describe. Program headers
+    are the loader's view; section headers are the linker's. Redrawn from fig. 2-1 of
+    <em>Practical Binary Analysis</em>.
+  </span>
+</FigureFrame>
+
+<style>
+  text {
+    font-family: var(--font-mono);
+    font-variant-ligatures: none;
+    text-anchor: middle;
+  }
+
+  .grid-dot {
+    fill: var(--border);
+    opacity: 0.5;
+  }
+
+  .box {
+    fill: var(--bg-1);
+    stroke-width: 1.25;
+    stroke-opacity: 0.75;
+  }
+
+  .box-sections {
+    stroke: var(--border);
+    stroke-opacity: 1;
+  }
+
+  .proc-teal {
+    stroke: var(--teal);
+  }
+
+  .proc-amber {
+    stroke: var(--amber);
+  }
+
+  .proc-blue {
+    stroke: var(--blue);
+  }
+
+  .title {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .lbl-teal {
+    fill: var(--teal);
+  }
+
+  .lbl-amber {
+    fill: var(--amber);
+  }
+
+  .lbl-blue {
+    fill: var(--blue);
+  }
+
+  .lbl-green {
+    fill: var(--green);
+  }
+
+  .sub {
+    fill: var(--text-faint);
+    font-size: 10px;
+  }
+
+  .fields {
+    fill: var(--text-muted);
+    font-size: 10px;
+  }
+
+  .chip {
+    fill: var(--bg-2);
+    stroke: var(--border);
+    stroke-width: 1;
+  }
+
+  .chip-strtab {
+    stroke: var(--teal);
+    stroke-opacity: 0.6;
+  }
+
+  .chip-text {
+    fill: var(--text-muted);
+    font-size: 10.5px;
+  }
+
+  .sect-name {
+    fill: var(--green);
+    font-size: 11px;
+  }
+
+  .tick {
+    stroke: var(--border);
+    stroke-width: 1;
+  }
+
+  .note {
+    fill: var(--text-faint);
+    font-size: 10.5px;
+    text-anchor: start;
+  }
+
+  .view-tag {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-anchor: start;
+  }
+
+  .ptr {
+    fill: none;
+    stroke: var(--text-faint);
+    stroke-width: 1.5;
+  }
+
+  .ptr-dash {
+    stroke-dasharray: 4 3;
+  }
+
+  .ptr-teal {
+    stroke: var(--teal);
+    stroke-opacity: 0.8;
+  }
+
+  .ptr-label {
+    fill: var(--text-faint);
+    font-size: 10px;
+    text-anchor: start;
+  }
+
+  .ptr-label.lbl-amber {
+    fill: var(--amber);
+  }
+
+  .ptr-label.lbl-blue {
+    fill: var(--blue);
+  }
+
+  .ptr-label.lbl-teal {
+    fill: var(--teal);
+  }
+
+  .arrow-head {
+    fill: var(--text-faint);
+  }
+
+  .arrow-head-teal {
+    fill: var(--teal);
+    fill-opacity: 0.8;
+  }
+</style>

@@ -1,0 +1,197 @@
+---
+import FigureFrame from './FigureFrame.astro';
+
+interface Props {
+  label?: string;
+}
+
+const { label = 'sections vs segments · the same file, twice' } = Astro.props;
+---
+
+<FigureFrame label={label}>
+  <svg
+    viewBox="0 0 936 460"
+    role="img"
+    aria-label="How the 31 link-time sections of an ELF binary collapse into four permission-grouped loadable segments. The ELF header, program headers, and dynamic-linking metadata sections map into a read-only LOAD segment at 0x0000. All executable sections map into a read-execute LOAD at 0x1000. Constants and unwind tables map into a read-only LOAD at 0x2000. Writable data sections map into a read-write LOAD at 0x3db8, whose memory size exceeds its file size by the zero-filled .bss bytes. The symbol tables and .comment sit in no loadable segment and are never mapped into memory."
+  >
+    <defs>
+      <marker
+        id="dm-arrow"
+        markerUnits="userSpaceOnUse"
+        markerWidth="9"
+        markerHeight="9"
+        refX="8.5"
+        refY="4.5"
+        orient="auto"
+      >
+        <path d="M0,0 L9,4.5 L0,9 Z" class="arrow-head"></path>
+      </marker>
+      <pattern id="dm-grid" width="22" height="22" patternUnits="userSpaceOnUse">
+        <circle cx="1.5" cy="1.5" r="1" class="grid-dot"></circle>
+      </pattern>
+    </defs>
+
+    <rect x="0" y="0" width="936" height="460" fill="url(#dm-grid)"></rect>
+
+    <text class="col-head" x="220" y="36">ON DISK · 31 SECTIONS</text>
+    <text class="col-head" x="728" y="36">IN MEMORY · 4 × PT_LOAD</text>
+
+    <!-- row 1: metadata -->
+    <rect class="box-disk" x="40" y="56" width="360" height="64" rx="6"></rect>
+    <text class="dim" x="220" y="76">elf header · program headers</text>
+    <text class="sect" x="220" y="92">.interp .note.* .gnu.hash .dynsym</text>
+    <text class="sect" x="220" y="108">.dynstr .gnu.version .rela.*</text>
+    <rect class="box-load perm-r" x="560" y="56" width="336" height="64" rx="6"></rect>
+    <text class="load-title lbl-blue" x="728" y="82">LOAD  r--  @ 0x0000</text>
+    <text class="dim" x="728" y="102">headers + dynamic metadata</text>
+    <line class="flow" x1="400" y1="88" x2="554" y2="88" marker-end="url(#dm-arrow)"></line>
+
+    <!-- row 2: code -->
+    <rect class="box-disk" x="40" y="136" width="360" height="64" rx="6"></rect>
+    <text class="sect" x="220" y="160">.init .plt .plt.got .plt.sec</text>
+    <text class="sect" x="220" y="180">.text .fini</text>
+    <rect class="box-load perm-x" x="560" y="136" width="336" height="64" rx="6"></rect>
+    <text class="load-title lbl-red" x="728" y="162">LOAD  r-x  @ 0x1000</text>
+    <text class="dim" x="728" y="182">all executable code</text>
+    <line class="flow" x1="400" y1="168" x2="554" y2="168" marker-end="url(#dm-arrow)"></line>
+
+    <!-- row 3: constants -->
+    <rect class="box-disk" x="40" y="216" width="360" height="64" rx="6"></rect>
+    <text class="sect" x="220" y="240">.rodata</text>
+    <text class="sect" x="220" y="258">.eh_frame_hdr .eh_frame</text>
+    <rect class="box-load perm-r" x="560" y="216" width="336" height="64" rx="6"></rect>
+    <text class="load-title lbl-blue" x="728" y="242">LOAD  r--  @ 0x2000</text>
+    <text class="dim" x="728" y="262">constants + unwind tables</text>
+    <line class="flow" x1="400" y1="248" x2="554" y2="248" marker-end="url(#dm-arrow)"></line>
+
+    <!-- row 4: writable data -->
+    <rect class="box-disk" x="40" y="296" width="360" height="64" rx="6"></rect>
+    <text class="sect" x="220" y="318">.init_array .fini_array .dynamic</text>
+    <text class="sect" x="220" y="338">.got .data .bss</text>
+    <rect class="box-load perm-w" x="560" y="296" width="336" height="64" rx="6"></rect>
+    <text class="load-title lbl-amber" x="728" y="314">LOAD  rw-  @ 0x3db8</text>
+    <text class="dim" x="728" y="332">filesz 0x258 → memsz 0x260</text>
+    <text class="dim" x="728" y="350">+8 zero-filled bytes = .bss</text>
+    <line class="flow" x1="400" y1="328" x2="554" y2="328" marker-end="url(#dm-arrow)"></line>
+
+    <!-- row 5: never mapped -->
+    <rect class="box-disk box-ghost" x="40" y="376" width="360" height="64" rx="6"></rect>
+    <text class="sect" x="220" y="400">.symtab .strtab .shstrtab</text>
+    <text class="sect" x="220" y="418">.comment</text>
+    <rect class="box-ghost-load" x="560" y="376" width="336" height="64" rx="6"></rect>
+    <text class="ghost-title" x="728" y="402">never mapped</text>
+    <text class="dim" x="728" y="422">these exist on disk only</text>
+    <line class="flow flow-ghost" x1="400" y1="408" x2="554" y2="408" marker-end="url(#dm-arrow)"></line>
+    <text class="ghost-note" x="477" y="398">in no PT_LOAD</text>
+  </svg>
+  <span slot="caption">
+    31 link-time sections collapse into four permission-grouped PT_LOAD segments. Whatever lands
+    in no segment (symbol tables, debug info) never reaches memory.
+  </span>
+</FigureFrame>
+
+<style>
+  text {
+    font-family: var(--font-mono);
+    font-variant-ligatures: none;
+    text-anchor: middle;
+  }
+
+  .grid-dot {
+    fill: var(--border);
+    opacity: 0.5;
+  }
+
+  .col-head {
+    fill: var(--text-faint);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+
+  .box-disk {
+    fill: var(--bg-1);
+    stroke: var(--border);
+    stroke-width: 1;
+  }
+
+  .box-ghost {
+    stroke-dasharray: 4 3;
+  }
+
+  .box-load {
+    fill: var(--bg-1);
+    stroke-width: 1.25;
+    stroke-opacity: 0.75;
+  }
+
+  .perm-r {
+    stroke: var(--blue);
+  }
+
+  .perm-x {
+    stroke: var(--red-soft);
+  }
+
+  .perm-w {
+    stroke: var(--amber);
+  }
+
+  .box-ghost-load {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 1;
+    stroke-dasharray: 4 3;
+  }
+
+  .sect {
+    fill: var(--green);
+    font-size: 11px;
+  }
+
+  .dim {
+    fill: var(--text-faint);
+    font-size: 10.5px;
+  }
+
+  .load-title {
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .lbl-blue {
+    fill: var(--blue);
+  }
+
+  .lbl-red {
+    fill: var(--red-soft);
+  }
+
+  .lbl-amber {
+    fill: var(--amber);
+  }
+
+  .ghost-title {
+    fill: var(--text-faint);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .ghost-note {
+    fill: var(--text-faint);
+    font-size: 9.5px;
+  }
+
+  .flow {
+    stroke: var(--text-faint);
+    stroke-width: 1.5;
+  }
+
+  .flow-ghost {
+    stroke-dasharray: 4 3;
+    stroke-opacity: 0.7;
+  }
+
+  .arrow-head {
+    fill: var(--text-faint);
+  }
+</style>

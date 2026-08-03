@@ -1,0 +1,293 @@
+---
+import FigureFrame from './FigureFrame.astro';
+
+interface Props {
+  label?: string;
+}
+
+const { label = 'fig 2-2 · lazy binding via the plt and got' } = Astro.props;
+---
+
+<FigureFrame label={label}>
+  <svg
+    viewBox="0 0 936 540"
+    role="img"
+    aria-label="Calling a shared library function via the PLT, in six steps. Step 1: main calls the puts stub at 0x1050. Step 2: the stub jumps indirectly through GOT slot 0x3328. Step 3: before binding, the slot points back into the PLT at 0x1030, so control lands on a push instruction. Step 4: the stub pushes relocation index 0 and jumps to PLT entry zero. Step 5: PLT zero pushes an identifier from the GOT and jumps through the GOT to the ld.so resolver. Step 6: the resolver writes the real address of puts into slot 0x3328 and jumps to puts in libc. Every later call goes through the patched slot straight to libc."
+  >
+    <defs>
+      <marker
+        id="lb-arrow"
+        markerUnits="userSpaceOnUse"
+        markerWidth="9"
+        markerHeight="9"
+        refX="8.5"
+        refY="4.5"
+        orient="auto"
+      >
+        <path d="M0,0 L9,4.5 L0,9 Z" class="arrow-head"></path>
+      </marker>
+      <marker
+        id="lb-arrow-amber"
+        markerUnits="userSpaceOnUse"
+        markerWidth="9"
+        markerHeight="9"
+        refX="8.5"
+        refY="4.5"
+        orient="auto"
+      >
+        <path d="M0,0 L9,4.5 L0,9 Z" class="arrow-head-amber"></path>
+      </marker>
+      <marker
+        id="lb-arrow-green"
+        markerUnits="userSpaceOnUse"
+        markerWidth="9"
+        markerHeight="9"
+        refX="8.5"
+        refY="4.5"
+        orient="auto"
+      >
+        <path d="M0,0 L9,4.5 L0,9 Z" class="arrow-head-green"></path>
+      </marker>
+      <pattern id="lb-grid" width="22" height="22" patternUnits="userSpaceOnUse">
+        <circle cx="1.5" cy="1.5" r="1" class="grid-dot"></circle>
+      </pattern>
+    </defs>
+
+    <rect x="0" y="0" width="936" height="540" fill="url(#lb-grid)"></rect>
+
+    <text class="col-head" x="250" y="40">CODE · R-X</text>
+    <text class="col-head" x="720" y="40">DATA · RW-</text>
+
+    <!-- .text -->
+    <rect class="box code" x="70" y="56" width="360" height="76" rx="6"></rect>
+    <text class="sect-tag lbl-red" x="86" y="76">.text</text>
+    <text class="code-line dim" x="100" y="98">&lt;main&gt;:</text>
+    <text class="code-line hot" x="112" y="116">call 1050 &lt;puts@plt&gt;</text>
+
+    <!-- .plt.sec -->
+    <rect class="box code" x="70" y="158" width="360" height="76" rx="6"></rect>
+    <text class="sect-tag lbl-red" x="86" y="178">.plt.sec</text>
+    <text class="code-line dim" x="100" y="200">1050 &lt;puts@plt&gt;:</text>
+    <text class="code-line hot" x="112" y="218">bnd jmp [0x3328]</text>
+
+    <!-- .plt with its two stubs -->
+    <rect class="box code" x="70" y="264" width="360" height="188" rx="6"></rect>
+    <text class="sect-tag lbl-red" x="86" y="284">.plt</text>
+    <rect class="stub" x="86" y="296" width="328" height="60" rx="4"></rect>
+    <text class="code-line dim" x="100" y="314">1030:</text>
+    <text class="code-line dim" x="146" y="314">endbr64</text>
+    <text class="code-line" x="146" y="330">push 0x0</text>
+    <text class="code-line" x="146" y="346">bnd jmp 1020</text>
+    <rect class="stub" x="86" y="378" width="328" height="62" rx="4"></rect>
+    <text class="code-line dim" x="100" y="396">1020 &lt;plt[0]&gt;:</text>
+    <text class="code-line" x="112" y="412">push [got+0x8]</text>
+    <text class="code-line" x="112" y="428">bnd jmp [got+0x10]</text>
+
+    <!-- .got.plt -->
+    <rect class="box data" x="560" y="56" width="320" height="188" rx="6"></rect>
+    <text class="sect-tag lbl-amber" x="576" y="76">.got.plt</text>
+    <text class="code-line dim" x="576" y="100">3310  &amp;_DYNAMIC</text>
+    <text class="code-line dim" x="576" y="122">3318  0 → link_map (ld.so fills)</text>
+    <text class="code-line dim" x="576" y="144">3320  0 → &amp;resolver (ld.so fills)</text>
+    <rect class="slot" x="572" y="158" width="294" height="72" rx="4"></rect>
+    <text class="code-line" x="586" y="176">3328  the puts slot:</text>
+    <text class="code-line lbl-amber" x="586" y="196">before: 0x1030 → back into .plt</text>
+    <text class="code-line lbl-green" x="586" y="214">after:  &amp;puts  → straight to libc</text>
+
+    <!-- ld.so resolver -->
+    <rect class="box resolver" x="560" y="300" width="320" height="72" rx="6"></rect>
+    <text class="sect-tag lbl-teal" x="576" y="322">ld.so · _dl_runtime_resolve</text>
+    <text class="code-line dim" x="576" y="344">look up "puts" (reloc index 0x0)</text>
+    <text class="code-line dim" x="576" y="360">write &amp;puts into slot 0x3328</text>
+
+    <!-- libc -->
+    <rect class="box libc" x="560" y="428" width="320" height="60" rx="6"></rect>
+    <text class="sect-tag lbl-green" x="576" y="450">libc.so.6</text>
+    <text class="code-line dim" x="576" y="470">&lt;puts&gt;: the real code</text>
+
+    <!-- step arrows -->
+    <line class="flow" x1="250" y1="132" x2="250" y2="155" marker-end="url(#lb-arrow)"></line>
+    <line class="flow" x1="430" y1="218" x2="566" y2="180" marker-end="url(#lb-arrow)"></line>
+    <line class="flow" x1="572" y1="198" x2="420" y2="322" marker-end="url(#lb-arrow)"></line>
+    <line class="flow" x1="250" y1="358" x2="250" y2="375" marker-end="url(#lb-arrow)"></line>
+    <line class="flow" x1="418" y1="408" x2="556" y2="338" marker-end="url(#lb-arrow)"></line>
+    <line class="flow flow-patch" x1="700" y1="296" x2="700" y2="236" marker-end="url(#lb-arrow-amber)"></line>
+    <line class="flow" x1="720" y1="376" x2="720" y2="424" marker-end="url(#lb-arrow)"></line>
+    <path class="flow flow-later" d="M866,214 L896,214 L896,458 L884,458" marker-end="url(#lb-arrow-green)"></path>
+
+    <!-- step badges -->
+    <g class="badge"><circle cx="270" cy="144" r="9"></circle><text x="270" y="147.5">1</text></g>
+    <g class="badge"><circle cx="499" cy="199" r="9"></circle><text x="499" y="202.5">2</text></g>
+    <g class="badge"><circle cx="495" cy="256" r="9"></circle><text x="495" y="259.5">3</text></g>
+    <g class="badge"><circle cx="272" cy="366" r="9"></circle><text x="272" y="369.5">4</text></g>
+    <g class="badge"><circle cx="487" cy="372" r="9"></circle><text x="487" y="375.5">5</text></g>
+    <g class="badge badge-amber"><circle cx="700" cy="265" r="9"></circle><text x="700" y="268.5">6</text></g>
+
+    <text class="side-note lbl-amber" x="714" y="268">writes &amp;puts</text>
+    <text class="side-note" x="734" y="402">then jmp puts</text>
+    <text class="later-note" x="720" y="514">every later call: two instructions, straight to libc</text>
+  </svg>
+  <span slot="caption">
+    The first call to puts walks the whole trampoline (1-6); the resolver's write into slot
+    0x3328 turns every later call into a single indirect jump. Addresses match the
+    <code>-z lazy</code> build above. Redrawn from fig. 2-2 of <em>Practical Binary Analysis</em>.
+  </span>
+</FigureFrame>
+
+<style>
+  text {
+    font-family: var(--font-mono);
+    font-variant-ligatures: none;
+    text-anchor: middle;
+  }
+
+  .grid-dot {
+    fill: var(--border);
+    opacity: 0.5;
+  }
+
+  .col-head {
+    fill: var(--text-faint);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+
+  .box {
+    fill: var(--bg-1);
+    stroke-width: 1.25;
+    stroke-opacity: 0.75;
+  }
+
+  .box.code {
+    stroke: var(--red-soft);
+  }
+
+  .box.data {
+    stroke: var(--amber);
+  }
+
+  .box.resolver {
+    stroke: var(--teal);
+  }
+
+  .box.libc {
+    stroke: var(--green);
+  }
+
+  .stub {
+    fill: var(--bg-2);
+    stroke: var(--border);
+    stroke-width: 1;
+  }
+
+  .slot {
+    fill: var(--bg-2);
+    stroke: var(--red-soft);
+    stroke-width: 1.25;
+    stroke-opacity: 0.9;
+  }
+
+  .sect-tag {
+    font-size: 12px;
+    font-weight: 600;
+    text-anchor: start;
+  }
+
+  .lbl-red {
+    fill: var(--red-soft);
+  }
+
+  .lbl-amber {
+    fill: var(--amber);
+  }
+
+  .lbl-teal {
+    fill: var(--teal);
+  }
+
+  .lbl-green {
+    fill: var(--green);
+  }
+
+  .code-line {
+    fill: var(--text);
+    font-size: 11px;
+    text-anchor: start;
+    white-space: pre;
+  }
+
+  .code-line.dim {
+    fill: var(--text-muted);
+  }
+
+  .code-line.hot {
+    fill: var(--text);
+    font-weight: 600;
+  }
+
+  .flow {
+    fill: none;
+    stroke: var(--text-faint);
+    stroke-width: 1.5;
+  }
+
+  .flow-patch {
+    stroke: var(--amber);
+    stroke-dasharray: 4 3;
+  }
+
+  .flow-later {
+    stroke: var(--green);
+    stroke-dasharray: 4 3;
+    stroke-opacity: 0.9;
+  }
+
+  .badge circle {
+    fill: var(--bg-2);
+    stroke: var(--red-soft);
+    stroke-width: 1.25;
+  }
+
+  .badge text {
+    fill: var(--red-soft);
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .badge-amber circle {
+    stroke: var(--amber);
+  }
+
+  .badge-amber text {
+    fill: var(--amber);
+  }
+
+  .side-note {
+    fill: var(--text-faint);
+    font-size: 10px;
+    text-anchor: start;
+  }
+
+  .side-note.lbl-amber {
+    fill: var(--amber);
+  }
+
+  .later-note {
+    fill: var(--green);
+    font-size: 10px;
+    fill-opacity: 0.9;
+  }
+
+  .arrow-head {
+    fill: var(--text-faint);
+  }
+
+  .arrow-head-amber {
+    fill: var(--amber);
+  }
+
+  .arrow-head-green {
+    fill: var(--green);
+    fill-opacity: 0.9;
+  }
+</style>
