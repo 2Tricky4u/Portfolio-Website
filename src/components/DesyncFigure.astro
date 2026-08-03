@@ -1,0 +1,234 @@
+---
+import FigureFrame from './FigureFrame.astro';
+
+interface Props {
+  label?: string;
+}
+
+const { label = 'desynchronisation · four data bytes eat two instructions' } = Astro.props;
+
+/* One byte per column, so both readings can be drawn as spans over the
+   SAME x axis. That is the whole point: the disagreement is about where
+   instruction boundaries fall, not about what the bytes are. */
+const X0 = 48;
+const PITCH = 66;
+const CW = 58;
+const bx = (i: number) => X0 + i * PITCH;
+const span = (a: number, b: number) => ({ x: bx(a), w: bx(b) + CW - bx(a) });
+
+const bytes = ['8e', '20', '5c', '00', '55', '48', '89', 'e5', '48', '83', 'ec', '10'];
+
+const intended = [
+  { ...span(0, 3), t: 'inline data · jumped over', cls: 'data' },
+  { ...span(4, 4), t: 'push rbp', cls: 'code' },
+  { ...span(5, 7), t: 'mov rbp,rsp', cls: 'code' },
+  { ...span(8, 11), t: 'sub rsp,0x10', cls: 'sync' },
+];
+
+const linear = [
+  { ...span(0, 1), t: 'mov fs,[rax]', cls: 'bad' },
+  { ...span(2, 2), t: 'pop rsp', cls: 'bad' },
+  { ...span(3, 5), t: 'add [rbp+0x48],dl', cls: 'eat' },
+  { ...span(6, 7), t: 'mov ebp,esp', cls: 'bad' },
+  { ...span(8, 11), t: 'sub rsp,0x10', cls: 'sync' },
+];
+
+const boundary = bx(3) + CW + 4; // where the data stops and real code starts
+const syncX = bx(8);
+---
+
+<FigureFrame label={label} minWidth={700}>
+  <svg
+    viewBox="0 0 936 300"
+    role="img"
+    aria-label="Twelve bytes of the text section shown once, with two different readings drawn as spans beneath them over the same axis. The intended reading groups the first four bytes as inline data that the program jumps over, then one byte as push rbp, three as mov rbp rsp, and four as sub rsp 0x10. The linear sweep instead groups the first two bytes as mov fs, one as pop rsp, and then a three byte add instruction that starts inside the data and finishes inside the real code, consuming the push rbp entirely. It then reads two bytes as mov ebp esp, the wreckage of mov rbp rsp. Both readings end with the identical four byte span for sub rsp 0x10, which is where the disassembler resynchronises, two instructions after the damage."
+  >
+    <defs>
+      <pattern id="ds-grid" width="22" height="22" patternUnits="userSpaceOnUse">
+        <circle cx="1.5" cy="1.5" r="1" class="grid-dot"></circle>
+      </pattern>
+    </defs>
+    <rect x="0" y="0" width="936" height="300" fill="url(#ds-grid)"></rect>
+
+    <!-- the column where both readings agree again -->
+    <rect class="syncband" x={syncX - 6} y="34" width={bx(11) + CW - syncX + 12} height="194" rx="6"></rect>
+
+    <text class="hdr" x={X0} y="26">the same twelve bytes at 0x401138, read two ways</text>
+
+    <!-- byte row -->
+    {
+      bytes.map((b, i) => (
+        <g>
+          <rect class={`cell ${i < 4 ? 'is-data' : 'is-code'}`} x={bx(i)} y="42" width={CW} height="32" rx="4" />
+          <text class={`byte ${i < 4 ? 'lbl-red' : ''}`} x={bx(i) + CW / 2} y="63">
+            {b}
+          </text>
+        </g>
+      ))
+    }
+
+    <!-- data / code boundary, marked only where it means something -->
+    <line class="bound" x1={boundary} y1="38" x2={boundary} y2="82"></line>
+    <text class="bound-t lbl-red anchor-end" x={boundary - 8} y="94">data ends</text>
+    <text class="bound-t lbl-green" x={boundary + 8} y="94">real code starts</text>
+
+    <!-- reading 1 -->
+    <text class="lane-t lbl-green" x={X0} y="118">what the program actually does</text>
+    {
+      intended.map((s) => (
+        <g>
+          <rect class={`span ${s.cls}`} x={s.x} y="126" width={s.w} height="30" rx="4" />
+          <text class="sp-t" x={s.x + s.w / 2} y="146">
+            {s.t}
+          </text>
+        </g>
+      ))
+    }
+
+    <!-- reading 2 -->
+    <text class="lane-t lbl-red" x={X0} y="184">what a linear sweep prints</text>
+    {
+      linear.map((s) => (
+        <g>
+          <rect class={`span ${s.cls}`} x={s.x} y="192" width={s.w} height="30" rx="4" />
+          <text class="sp-t" x={s.x + s.w / 2} y="212">
+            {s.t}
+          </text>
+        </g>
+      ))
+    }
+
+    <!-- the one span that causes the damage -->
+    <line class="lead" x1={bx(4)} y1="222" x2={bx(4)} y2="240"></line>
+    <text class="note lbl-red anchor-mid" x={bx(4)} y="254">
+      this span starts in the data and ends in the code
+    </text>
+    <text class="note lbl-red anchor-mid" x={bx(4)} y="268">
+      it swallows push rbp, which never reaches the output
+    </text>
+
+    <text class="note lbl-teal anchor-mid" x={syncX + (bx(11) + CW - syncX) / 2} y="240">
+      identical span
+    </text>
+    <text class="note lbl-teal anchor-mid" x={syncX + (bx(11) + CW - syncX) / 2} y="254">
+      resynchronised
+    </text>
+  </svg>
+  <span slot="caption">
+    Read it as one byte per column. The two rows disagree only about where instructions
+    <em>begin</em>, and the damage is the three-byte <code>add</code>: it straddles the boundary,
+    eating <code>push rbp</code> whole. Four bytes of data cost two real instructions. Bytes from
+    my own <code>confuse.c</code>, which still runs correctly.
+  </span>
+</FigureFrame>
+
+<style>
+  text {
+    font-family: var(--font-mono);
+    font-variant-ligatures: none;
+    text-anchor: start;
+  }
+  .grid-dot {
+    fill: var(--border);
+    opacity: 0.5;
+  }
+  .hdr {
+    fill: var(--text-muted);
+    font-size: 11px;
+  }
+
+  .syncband {
+    fill: var(--teal);
+    fill-opacity: 0.07;
+    stroke: var(--teal);
+    stroke-opacity: 0.35;
+    stroke-width: 1;
+    stroke-dasharray: 4 3;
+  }
+
+  .cell {
+    fill: var(--bg-2);
+    stroke-width: 1.25;
+  }
+  .cell.is-data {
+    stroke: var(--red-soft);
+  }
+  .cell.is-code {
+    stroke: var(--border);
+  }
+  .byte {
+    fill: var(--text);
+    font-size: 13px;
+    text-anchor: middle;
+  }
+
+  .bound {
+    stroke: var(--text-faint);
+    stroke-width: 1;
+    stroke-dasharray: 3 2;
+  }
+  .bound-t {
+    font-size: 9.5px;
+  }
+
+  .lane-t {
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+
+  .span {
+    fill: var(--bg-1);
+    stroke-width: 1.25;
+  }
+  .span.data {
+    stroke: var(--red-soft);
+    fill: var(--bg-2);
+  }
+  .span.code {
+    stroke: var(--green);
+  }
+  .span.bad {
+    stroke: var(--text-faint);
+  }
+  .span.eat {
+    stroke: var(--red-soft);
+    fill: var(--bg-2);
+    stroke-width: 2;
+  }
+  .span.sync {
+    stroke: var(--teal);
+  }
+  .sp-t {
+    fill: var(--text);
+    font-size: 10px;
+    text-anchor: middle;
+  }
+
+  .lead {
+    stroke: var(--red-soft);
+    stroke-width: 1.25;
+    stroke-dasharray: 3 2;
+  }
+  .note {
+    font-size: 10px;
+  }
+
+  /* SVG presentation attributes lose to these CSS rules, so anchoring has
+     to be done with classes rather than text-anchor="..." */
+  .anchor-mid {
+    text-anchor: middle;
+  }
+  .anchor-end {
+    text-anchor: end;
+  }
+
+  .lbl-red {
+    fill: var(--red-soft);
+  }
+  .lbl-green {
+    fill: var(--green);
+  }
+  .lbl-teal {
+    fill: var(--teal);
+  }
+</style>

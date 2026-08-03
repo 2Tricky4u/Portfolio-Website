@@ -1,0 +1,163 @@
+---
+import FigureFrame from './FigureFrame.astro';
+
+interface Props {
+  label?: string;
+}
+
+const { label = 'measured coverage of .text · tricky, gcc -O2' } = Astro.props;
+
+/* One measure (bytes of .text recovered) across four configurations, so hue
+   carries grouping + emphasis, not identity: neutral for the linear sweep,
+   which is a different algorithm rather than a better score, and one teal
+   ramp for the three recursive runs, brightest on the result that matters. */
+const rows = [
+  {
+    name: 'linear sweep',
+    pct: 100.0,
+    ins: 169,
+    note: 'decodes every byte, correct or not',
+    cls: 'neutral',
+  },
+  {
+    name: 'recursive, entry only',
+    pct: 6.4,
+    ins: 13,
+    note: 'stops at the first indirect call',
+    cls: 'rec-1',
+  },
+  {
+    name: 'recursive + symbols',
+    pct: 65.6,
+    ins: 121,
+    note: 'symbol table hands it the function starts',
+    cls: 'rec-2',
+  },
+  {
+    name: 'recursive + my two fixes',
+    pct: 79.4,
+    ins: 154,
+    note: 'prologue scan + jump-table resolution',
+    cls: 'rec-3',
+  },
+];
+
+const X = 244;
+const W = 480;
+const H = 20;
+
+/* Rounded at the data end, square on the baseline, so every bar visibly
+   grows from the same zero. */
+const barPath = (w: number, y: number, r = 4) => {
+  const rr = Math.max(0, Math.min(r, w));
+  return `M${X},${y} H${X + w - rr} A${rr},${rr} 0 0 1 ${X + w},${y + rr} V${y + H - rr} A${rr},${rr} 0 0 1 ${X + w - rr},${y + H} H${X} Z`;
+};
+---
+
+<FigureFrame label={label} minWidth={640}>
+  <svg
+    viewBox="0 0 936 250"
+    role="img"
+    aria-label="Measured coverage of the text section of the tricky binary compiled at dash O 2, 598 bytes in total. A linear sweep covers 100 percent with 169 instructions, but decodes every byte whether or not it is code. Recursive disassembly seeded only from the entry point covers 6.4 percent with 13 instructions, because it stops at the first indirect call. Adding the symbol table raises it to 65.6 percent and 121 instructions. Adding my two improvements, prologue scanning and jump table resolution, reaches 79.4 percent and 154 instructions, beating the symbol table."
+  >
+    <defs>
+      <pattern id="cv-grid" width="22" height="22" patternUnits="userSpaceOnUse">
+        <circle cx="1.5" cy="1.5" r="1" class="grid-dot"></circle>
+      </pattern>
+    </defs>
+    <rect x="0" y="0" width="936" height="250" fill="url(#cv-grid)"></rect>
+
+    {
+      rows.map((r, i) => {
+        const y = 30 + i * 50;
+        const w = (W * r.pct) / 100;
+        return (
+          <g>
+            <text class="name" x="24" y={y + 14}>
+              {r.name}
+            </text>
+            <rect class="track" x={X} y={y} width={W} height={H} rx="4" />
+            <path class={`bar ${r.cls}`} d={barPath(w, y)} />
+            <text class="pct" x={X + w + 10} y={y + 15}>
+              {r.pct.toFixed(1)}%
+            </text>
+            <text class="ins" x="922" y={y + 15}>
+              {r.ins} ins
+            </text>
+            <text class="note" x={X} y={y + 36}>
+              {r.note}
+            </text>
+          </g>
+        );
+      })
+    }
+
+    <text class="foot" x="24" y="238">
+      598 bytes of .text · the two cheap heuristics beat the symbol table
+    </text>
+  </svg>
+  <span slot="caption">
+    Coverage is not a score to maximise, which is why the linear sweep is drawn in neutral rather
+    than as a winner: it reaches 100% by decoding every byte, including the ones that were never
+    code. The teal ramp is the honest comparison, and it starts almost blind.
+  </span>
+</FigureFrame>
+
+<style>
+  text {
+    font-family: var(--font-mono);
+    font-variant-ligatures: none;
+    text-anchor: start;
+  }
+  .grid-dot {
+    fill: var(--border);
+    opacity: 0.5;
+  }
+  .name {
+    fill: var(--text);
+    font-size: 11.5px;
+  }
+  .track {
+    fill: var(--bg-2);
+    stroke: var(--border);
+    stroke-width: 1;
+  }
+
+  /* Neutral = a different algorithm, not a better one. Teal ramp = the three
+     recursive runs, brightest on the configuration the exercise arrives at. */
+  .bar.neutral {
+    fill: var(--text-faint);
+    fill-opacity: 0.5;
+  }
+  .bar.rec-1 {
+    fill: var(--teal);
+    fill-opacity: 0.38;
+  }
+  .bar.rec-2 {
+    fill: var(--teal);
+    fill-opacity: 0.65;
+  }
+  .bar.rec-3 {
+    fill: var(--teal);
+  }
+
+  /* Values wear text ink; the bar beside them carries the colour. */
+  .pct {
+    fill: var(--text);
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  .ins {
+    fill: var(--text-faint);
+    font-size: 10px;
+    text-anchor: end;
+  }
+  .note {
+    fill: var(--text-faint);
+    font-size: 9.5px;
+  }
+  .foot {
+    fill: var(--text-muted);
+    font-size: 10.5px;
+  }
+</style>

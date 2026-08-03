@@ -1,7 +1,7 @@
 ---
 title: 'Practical Binary Analysis, Ch. 3: The PE Format'
 description: 'Notes and solved exercises on the Windows PE32+ format: the MS-DOS header nobody can delete, RVAs and ImageBase, the DataDirectory, thunks and the IAT, and every place PE and ELF quietly disagree, from Dennis Andriesse''s Practical Binary Analysis.'
-pubDate: 2026-08-03
+pubDate: 2026-06-27
 tags: [binary-analysis, PE, reverse-engineering, windows]
 ---
 
@@ -33,7 +33,7 @@ PE is a modified **COFF**, the object format Unix used before ELF, which is why 
 
 <PeLayoutFigure />
 
-Read that top to bottom and the shape of the format is really four ideas: a fossil (the MS-DOS header and stub), an executable header split into three pieces, one section header table, and the sections. The single most important structural difference from ELF is what is *absent* — there is no program header table.
+Read that top to bottom and the shape of the format is really four ideas: a fossil (the MS-DOS header and stub), an executable header split into three pieces, one section header table, and the sections. The single most important structural difference from ELF is what is *absent*: there is no program header table.
 
 ## The MS-DOS header and stub
 
@@ -41,7 +41,7 @@ Every PE file begins with an `IMAGE_DOS_HEADER`, starting with the ASCII magic *
 
 The point was a smoother transition in the early 90s when users had both DOS and PE binaries. Thirty-plus years later every `.exe` still carries it.
 
-<TerminalBlock label="xxd hello.exe | head — the fossil, in full">
+<TerminalBlock label="xxd hello.exe | head: the fossil, in full">
 ```text
 00000000: 4d5a 9000 0300 0000 0400 0000 ffff 0000  MZ..............
 00000010: b800 0000 0000 0000 4000 0000 0000 0000  ........@.......
@@ -54,7 +54,7 @@ The point was a smoother transition in the early 90s when users had both DOS and
 ```
 </TerminalBlock>
 
-Only one field in that header still matters: **`e_lfanew`**, the last one, at offset `0x3c`. It holds the file offset where the real PE headers begin — `0x00000100` in the dump above. A PE-aware loader reads the DOS header, jumps to `e_lfanew`, and never looks back.
+Only one field in that header still matters: **`e_lfanew`**, the last one, at offset `0x3c`. It holds the file offset where the real PE headers begin, `0x00000100` in the dump above. A PE-aware loader reads the DOS header, jumps to `e_lfanew`, and never looks back.
 
 <Callout title="The stub is real 16-bit code, not a string" variant="teal">
   The bytes at `0x40` are executable: `0e` `1f` is `push cs` / `pop ds`, `ba 0e 00` is `mov dx,0xe` (offset of the message), `b4 09` / `cd 21` is `mov ah,9` / `int 0x21` (DOS print-string), and `b8 01 4c` / `cd 21` is `mov ax,0x4c01` / `int 0x21` (DOS exit). Disassembling those 14 bytes as 16-bit code gives exactly seven instructions. Note that `mov dx,0xe` checks out: the string begins at file offset `0x4e`, which is `0xe` bytes into the stub. The `$` at `0x78` terminates it, because that is how DOS `int 21h/09h` marks the end. In principle the stub can be a full DOS port of the program; in practice the linker emits this same seven-instruction shrug every time.
@@ -64,13 +64,13 @@ Only one field in that header still matters: **`e_lfanew`**, the last one, at of
 
 Where ELF has one `Elf64_Ehdr`, PE splits the job three ways. The Windows SDK wraps all three in `IMAGE_NT_HEADERS64`, but in practice they are treated separately.
 
-**PE signature** — the four bytes `50 45 00 00`, i.e. `"PE\0\0"`. This is the real magic; the `MZ` at offset 0 only tells you it is *some* DOS-compatible file.
+**PE signature**: the four bytes `50 45 00 00`, i.e. `"PE\0\0"`. This is the real magic; the `MZ` at offset 0 only tells you it is *some* DOS-compatible file.
 
-**PE file header** (`IMAGE_FILE_HEADER`, 20 bytes) — general properties. The fields that matter are `Machine` (`0x8664` for x86-64, exactly like ELF's `e_machine`), `NumberOfSections`, `SizeOfOptionalHeader`, and `Characteristics` (a flag word covering things like "is a DLL" and "has been stripped"). It also carries `PointerToSymbolTable` and `NumberOfSymbols`, both **deprecated** — modern PE files put symbols in a separate PDB instead.
+**PE file header** (`IMAGE_FILE_HEADER`, 20 bytes): general properties. The fields that matter are `Machine` (`0x8664` for x86-64, exactly like ELF's `e_machine`), `NumberOfSections`, `SizeOfOptionalHeader`, and `Characteristics` (a flag word covering things like "is a DLL" and "has been stripped"). It also carries `PointerToSymbolTable` and `NumberOfSymbols`, both **deprecated**, since modern PE files put symbols in a separate PDB instead.
 
-**PE optional header** (`IMAGE_OPTIONAL_HEADER64`) — not optional in any executable, despite the name; it may be missing only in object files.
+**PE optional header** (`IMAGE_OPTIONAL_HEADER64`): not optional in any executable, despite the name; it may be missing only in object files.
 
-<TerminalBlock label="my own parser over hello.exe — the three headers">
+<TerminalBlock label="my own parser over hello.exe: the three headers">
 ```bash
 DOS  e_magic              4d5a  'MZ'
 DOS  e_lfanew             0x100        -> file offset of the PE signature
@@ -93,11 +93,11 @@ OPT  DllCharacteristics   0x8160       DYNAMIC_BASE(ASLR) | NX_COMPAT
 
 ### RVAs and ImageBase
 
-This is the field convention that trips up everyone coming from ELF. PE binaries are designed to load at one specific address, `ImageBase` (`0x140000000` here, the standard base for 64-bit executables). Almost every other pointer in the file is a **relative virtual address** — an offset you add to `ImageBase` to get a real address.
+This is the field convention that trips up everyone coming from ELF. PE binaries are designed to load at one specific address, `ImageBase` (`0x140000000` here, the standard base for 64-bit executables). Almost every other pointer in the file is a **relative virtual address**, an offset you add to `ImageBase` to get a real address.
 
 So the entry point is not at `0x12e4`. It is at `ImageBase + AddressOfEntryPoint` = `0x140000000 + 0x12e4` = **`0x1400012e4`**, which is exactly what objdump reports. Every RVA in the file works this way, and none of them means anything on its own.
 
-<TerminalBlock label="objdump -f hello.exe — cross-checking the arithmetic">
+<TerminalBlock label="objdump -f hello.exe: cross-checking the arithmetic">
 ```bash
 hello.exe:     file format pei-x86-64
 architecture: i386:x86-64, flags 0x0000012f:
@@ -107,14 +107,14 @@ start address 0x00000001400012e4        # = ImageBase 0x140000000 + RVA 0x12e4
 </TerminalBlock>
 
 <Callout title="ELF stores addresses; PE stores offsets from a base" variant="amber">
-  `e_entry` in an ELF is a virtual address you can use directly (for a PIE, relative to whatever base the kernel picked). `AddressOfEntryPoint` in a PE is an RVA and means nothing until you add `ImageBase`. Every DataDirectory entry, every `VirtualAddress` in the section table, works the same way. When a PE cannot get its preferred base — which is normal now that ASLR is on, note `DYNAMIC_BASE` above — the loader picks another base and must then **rewrite every absolute address baked into the image**, using the `.reloc` table. ELF sidesteps that entire problem with position-independent code and a GOT.
+  `e_entry` in an ELF is a virtual address you can use directly (for a PIE, relative to whatever base the kernel picked). `AddressOfEntryPoint` in a PE is an RVA and means nothing until you add `ImageBase`. Every DataDirectory entry, every `VirtualAddress` in the section table, works the same way. When a PE cannot get its preferred base, which is normal now that ASLR is on (note `DYNAMIC_BASE` above), the loader picks another base and must then **rewrite every absolute address baked into the image**, using the `.reloc` table. ELF sidesteps that entire problem with position-independent code and a GOT.
 </Callout>
 
 ### The DataDirectory
 
-The least self-explanatory field in the optional header is the `DataDirectory`: a fixed array of 16 `IMAGE_DATA_DIRECTORY` structs, each just an `(RVA, size)` pair. The *index* determines the meaning — entry 0 is the export table, entry 1 the import table, entry 5 the base relocations, entry 12 the IAT.
+The least self-explanatory field in the optional header is the `DataDirectory`: a fixed array of 16 `IMAGE_DATA_DIRECTORY` structs, each just an `(RVA, size)` pair. The *index* determines the meaning: entry 0 is the export table, entry 1 the import table, entry 5 the base relocations, entry 12 the IAT.
 
-<TerminalBlock label="objdump -x hello.exe — the DataDirectory (non-empty entries)">
+<TerminalBlock label="objdump -x hello.exe: the DataDirectory (non-empty entries)">
 ```bash
 The Data Directory
 Entry 0 0000000000000000 00000000 Export Directory [.edata]
@@ -128,7 +128,7 @@ Entry c 0000000000016000 00000268 Import Address Table Directory
 </TerminalBlock>
 
 <Callout title="The DataDirectory is PE's stand-in for program headers" variant="blue">
-  ELF answers "what does the loader need?" with a whole second table — the program headers. PE answers it with these 16 shortcuts. The loader does not have to walk the section table hunting for the imports; it reads entry 1 and goes straight there. That is the closest PE gets to an execution view, but it is a lookup table, not a segment map: it says *where things are*, never *what to map or with which permissions*. Those live per-section instead, in each header's `Characteristics` and `VirtualSize` — so PE keeps ELF's `PF_*` and `p_memsz` ideas, just attached to sections rather than to a segment that groups them.
+  ELF answers "what does the loader need?" with a whole second table, the program headers. PE answers it with these 16 shortcuts. The loader does not have to walk the section table hunting for the imports; it reads entry 1 and goes straight there. That is the closest PE gets to an execution view, but it is a lookup table, not a segment map: it says *where things are*, never *what to map or with which permissions*. Those live per-section instead, in each header's `Characteristics` and `VirtualSize`, so PE keeps ELF's `PF_*` and `p_memsz` ideas, just attached to sections rather than to a segment that groups them.
 </Callout>
 
 ## The section header table
@@ -138,10 +138,10 @@ Structurally this is close to ELF's, an array of `IMAGE_SECTION_HEADER`, each de
 Two differences stand out. First, the name: PE section headers hold the name **inline** in a `BYTE Name[8]` array, not as an index into a string table. There is no `.shstrtab` equivalent, and section names cannot exceed 8 characters. Second, and more consequential:
 
 <Callout title="PE does not distinguish sections from segments" variant="red">
-  There is no program header table in a PE file. The section header table is used for **both** linking and loading. ELF's central design idea from Chapter 2 — the section view for the linker, the segment view for the loader, the two deliberately decoupled — simply does not exist here. A PE section carries its own permissions and its own load address, and the loader maps sections one at a time. This is why PE binaries tend to have more sections with finer-grained permissions where ELF would bundle several sections into one `PT_LOAD`.
+  There is no program header table in a PE file. The section header table is used for **both** linking and loading. ELF's central design idea from Chapter 2, the section view for the linker and the segment view for the loader, deliberately decoupled, simply does not exist here. A PE section carries its own permissions and its own load address, and the loader maps sections one at a time. This is why PE binaries tend to have more sections with finer-grained permissions where ELF would bundle several sections into one `PT_LOAD`.
 </Callout>
 
-<TerminalBlock label="objdump -h hello.exe — six sections, each self-describing">
+<TerminalBlock label="objdump -h hello.exe: six sections, each self-describing">
 ```bash
 Sections:
 Idx Name          Size      VMA               LMA               File off  Algn
@@ -160,23 +160,23 @@ Idx Name          Size      VMA               LMA               File off  Algn
 ```
 </TerminalBlock>
 
-Note that `Size` here is `SizeOfRawData`, the on-disk size — objdump does not show `VirtualSize` in this view, which is exactly the field that matters for `.data`. Exercise 2 comes back to that.
+`Size` here is `SizeOfRawData`, the on-disk size. objdump does not show `VirtualSize` in this view, which is the field that matters for `.data`. Exercise 2 comes back to that.
 
 ## Sections
 
 Most map onto ELF sections you already know, occasionally under a different name:
 
-- **`.text`** — code, same name and same job as ELF.
-- **`.rdata`** — read-only data. This is ELF's `.rodata`, renamed. It also absorbs the import tables and the IAT.
-- **`.data`** — initialized, writable data, same as ELF.
-- **`.bss`** — zero-initialized data. Often absent as a separate section; MSVC folds it into `.data` by giving that section a `VirtualSize` larger than its `SizeOfRawData` and letting the loader zero the difference.
-- **`.pdata`** — exception/unwind tables. Windows x64 requires table-driven unwinding, so this is mandatory rather than optional; ELF's rough analogue is `.eh_frame`.
-- **`.reloc`** — base relocations, used when the image cannot load at `ImageBase`.
-- **`.rsrc`** — resources (icons, version info, dialogs). No ELF equivalent at all.
-- **`.edata` / `.idata`** — export and import tables, the two PE sections with no direct ELF counterpart.
+- **`.text`**: code, same name and same job as ELF.
+- **`.rdata`**: read-only data. This is ELF's `.rodata`, renamed. It also absorbs the import tables and the IAT.
+- **`.data`**: initialized, writable data, same as ELF.
+- **`.bss`**: zero-initialized data. Often absent as a separate section; MSVC folds it into `.data` by giving that section a `VirtualSize` larger than its `SizeOfRawData` and letting the loader zero the difference.
+- **`.pdata`**: exception/unwind tables. Windows x64 requires table-driven unwinding, so this is mandatory rather than optional; ELF's rough analogue is `.eh_frame`.
+- **`.reloc`**: base relocations, used when the image cannot load at `ImageBase`.
+- **`.rsrc`**: resources (icons, version info, dialogs). No ELF equivalent at all.
+- **`.edata` / `.idata`**: export and import tables, the two PE sections with no direct ELF counterpart.
 
 <Callout title="Where did .idata go?" variant="amber">
-  My binary has no `.idata` or `.edata` section, and neither does the book's example. Linkers routinely merge them into `.rdata` — the DataDirectory entries still point at the right RVAs, so the loader neither knows nor cares. This is exactly why the DataDirectory exists: the *contents* are found by directory index, not by section name. Never go looking for imports by section name; read entry 1.
+  My binary has no `.idata` or `.edata` section, and neither does the book's example. Linkers routinely merge them into `.rdata`, and the DataDirectory entries still point at the right RVAs, so the loader neither knows nor cares. This is exactly why the DataDirectory exists: the *contents* are found by directory index, not by section name. Never go looking for imports by section name; read entry 1.
 </Callout>
 
 ### Imports, exports, and the IAT
@@ -185,11 +185,11 @@ Most map onto ELF sections you already know, occasionally under a different name
 
 <ThunkIatFigure />
 
-The IAT is a flat array of pointer slots — the same idea as ELF's GOT. On disk each slot points at a *Hint/Name* entry (an ordinal hint plus the function's name string); after loading, each slot holds the real function address. The book describes calls reaching those slots through a **thunk**, a one-instruction stub that jumps indirectly through the slot.
+The IAT is a flat array of pointer slots, the same idea as ELF's GOT. On disk each slot points at a *Hint/Name* entry (an ordinal hint plus the function's name string); after loading, each slot holds the real function address. The book describes calls reaching those slots through a **thunk**, a one-instruction stub that jumps indirectly through the slot.
 
 My binary imports 76 functions, all from `KERNEL32.dll`, which the IAT's own size confirms: `0x268 / 8` = 77 slots, i.e. 76 imports plus the null terminator that ends the table.
 
-<TerminalBlock label="objdump -M intel -d hello.exe — thunks, PE's PLT stubs">
+<TerminalBlock label="objdump -M intel -d hello.exe: thunks, PE's PLT stubs">
 ```asm
 140001603:  48 ff 25 16 4a 01 00   rex.W jmp QWORD PTR [rip+0x14a16]   # 0x140016020
 14000180f:  48 ff 25 3a 48 01 00   rex.W jmp QWORD PTR [rip+0x1483a]   # 0x140016050
@@ -203,10 +203,10 @@ My binary imports 76 functions, all from `KERNEL32.dll`, which the IAT's own siz
 </TerminalBlock>
 
 <Callout title="In my build the thunk is the minority case" variant="amber">
-  Counting how each of the 76 IAT slots is actually reached: **62** are reached by a direct `call QWORD PTR [rip+…]` at the call site, and only **16** through a `jmp` thunk (2 slots both ways, for 76 distinct slots in total — exactly the import count, which is a satisfying cross-check). So the book's "a call to a library function is implemented as a call to a thunk" describes the *older* pattern; MSVC now usually emits `call [__imp_Foo]` straight through the IAT and skips the middleman. The thunk still appears, mostly where a function's address is taken rather than immediately called. The mental model survives intact — the IAT slot is the indirection point either way — but if you go hunting for a PLT-shaped stub per import, you will not find one.
+  Counting how each of the 76 IAT slots is actually reached: **62** are reached by a direct `call QWORD PTR [rip+…]` at the call site, and only **16** through a `jmp` thunk (2 slots both ways, for 76 distinct slots in total, exactly the import count, which is a satisfying cross-check). So the book's "a call to a library function is implemented as a call to a thunk" describes the *older* pattern; MSVC now usually emits `call [__imp_Foo]` straight through the IAT and skips the middleman. The thunk still appears, mostly where a function's address is taken rather than immediately called. The mental model survives intact, since the IAT slot is the indirection point either way, but if you go hunting for a PLT-shaped stub per import you will not find one.
 </Callout>
 
-<TerminalBlock label="objdump -x hello.exe — what those slots resolve to">
+<TerminalBlock label="objdump -x hello.exe: what those slots resolve to">
 ```bash
 The Import Tables (interpreted .rdata section contents)
  DLL Name: KERNEL32.dll
@@ -225,11 +225,11 @@ The Import Tables (interpreted .rdata section contents)
 </TerminalBlock>
 
 <Callout title="Not every indirect jump is an import thunk" variant="red">
-  The seventeenth target is a trap worth knowing about. Five `jmp QWORD PTR [rip+…]` sites point at `0x140016278`, which sits *just past* the IAT and looks exactly like a thunk. It is not an import at all: reading the Load Configuration Directory shows `GuardCFDispatchFunctionPointer = 0x140016278` and `GuardCFCheckFunctionPointer = 0x140016268`, so those two slots belong to **Control Flow Guard**, Windows' control-flow-integrity scheme. The slot holds `0x140014c30`, a pointer back into `.text`, not into a DLL. The lesson for RE: classify a thunk by whether its target lies inside the IAT's declared `(RVA, size)` range, never by the instruction shape alone.
+  The seventeenth target is a trap useful to know about. Five `jmp QWORD PTR [rip+…]` sites point at `0x140016278`, which sits *just past* the IAT and looks exactly like a thunk. It is not an import at all: reading the Load Configuration Directory shows `GuardCFDispatchFunctionPointer = 0x140016278` and `GuardCFCheckFunctionPointer = 0x140016268`, so those two slots belong to **Control Flow Guard**, Windows' control-flow-integrity scheme. The slot holds `0x140014c30`, a pointer back into `.text`, not into a DLL. The lesson for RE: classify a thunk by whether its target lies inside the IAT's declared `(RVA, size)` range, never by the instruction shape alone.
 </Callout>
 
 <Callout title="Thunk + IAT ≈ PLT + GOT, minus the laziness" variant="teal">
-  The correspondence is nearly exact: thunk ↔ PLT stub, IAT slot ↔ GOT slot, and both exist for the same two reasons from Chapter 2 (keep code pages read-only, and let each process have private pointers into libraries mapped at different addresses). The difference is *when*. ELF's PLT stub is a three-instruction trampoline because it may need to fall into `ld.so` on first call; the Windows loader resolves every ordinary import up front, so a PE thunk is a single `jmp` that never changes. PE's equivalent of laziness is **delay loading**, an opt-in linker feature with its own directory (entry 13) rather than the default path — my `hello.exe` has none, though `C:\Windows\System32\notepad.exe` does. The irony is that modern Linux has converged on the same place: once `BIND_NOW` became the default, ELF stopped binding lazily too.
+  The correspondence is nearly exact: thunk ↔ PLT stub, IAT slot ↔ GOT slot, and both exist for the same two reasons from Chapter 2 (keep code pages read-only, and let each process have private pointers into libraries mapped at different addresses). The difference is *when*. ELF's PLT stub is a three-instruction trampoline because it may need to fall into `ld.so` on first call; the Windows loader resolves every ordinary import up front, so a PE thunk is a single `jmp` that never changes. PE's equivalent of laziness is **delay loading**, an opt-in linker feature with its own directory (entry 13) rather than the default path. My `hello.exe` has none, though `C:\Windows\System32\notepad.exe` does. The irony is that modern Linux has converged on the same place: once `BIND_NOW` became the default, ELF stopped binding lazily too.
 </Callout>
 
 ## Exercises
@@ -238,9 +238,9 @@ The Import Tables (interpreted .rdata section contents)
 
 > Just as you did for ELF binaries in Chapter 2, use a hex viewer like xxd to view the bytes in a PE binary. [...] Can you identify the bytes representing the PE header and make sense of all of the header fields?
 
-Unlike ELF, the interesting header is not at offset 0 — you have to follow `e_lfanew` first. At offset `0x3c` the DOS header ends with `00 01 00 00`, little-endian for `0x100`, so the PE headers start there.
+Unlike ELF, the interesting header is not at offset 0. You have to follow `e_lfanew` first. At offset `0x3c` the DOS header ends with `00 01 00 00`, little-endian for `0x100`, so the PE headers start there.
 
-<TerminalBlock label="xxd -s 0x100 -l 96 hello.exe — the real headers">
+<TerminalBlock label="xxd -s 0x100 -l 96 hello.exe: the real headers">
 ```text
 00000100: 5045 0000 6486 0600 547b 706a 0000 0000  PE..d...T{pj....
 00000110: 0000 0000 f000 2200 0b02 0e2c 004e 0100  ......"....,.N..
@@ -289,10 +289,10 @@ e4 12 00 00              AddressOfEntryPoint    RVA 0x12e4
 ```
 </TerminalBlock>
 
-Everything cross-checks: entry `0x140000000 + 0x12e4` = `0x1400012e4`, matching `objdump -f`; six sections, matching the section table; PE32+. Two fields are worth dwelling on. `PointerToSymbolTable` and `NumberOfSymbols` are both **zero**, which is the deprecation from the file header made concrete — there are no embedded symbols, so a disassembler shows `.text` as one unnamed blob exactly like a stripped ELF, and the names live in a `.pdb` I was never given. And `SizeOfUninitializedData` is zero despite the program obviously having uninitialized globals in the CRT, because MSVC folded them into `.data`'s `VirtualSize` rather than emitting a `.bss`.
+Everything cross-checks: entry `0x140000000 + 0x12e4` = `0x1400012e4`, matching `objdump -f`; six sections, matching the section table; PE32+. Two fields are worth dwelling on. `PointerToSymbolTable` and `NumberOfSymbols` are both **zero**, which is the deprecation from the file header made concrete: there are no embedded symbols, so a disassembler shows `.text` as one unnamed blob exactly like a stripped ELF, and the names live in a `.pdb` I was never given. And `SizeOfUninitializedData` is zero despite the program obviously having uninitialized globals in the CRT, because MSVC folded them into `.data`'s `VirtualSize` rather than emitting a `.bss`.
 
 <Callout title="Two magic numbers, two headers, one file" variant="blue">
-  The clean way to think about exercise 1: a PE has *two* headers with *two* magic values, and you cannot assume the distance between them — here `e_lfanew` happens to be `0x100`, but it is a field precisely because it varies with the stub's size. `MZ` at offset 0 is for a machine that stopped existing decades ago; `PE\0\0` at `e_lfanew` is the one every real tool uses. An ELF has exactly one magic, always at offset 0, and that is the whole difference in navigation cost.
+  The clean way to think about exercise 1: a PE has *two* headers with *two* magic values, and you cannot assume the distance between them. Here `e_lfanew` happens to be `0x100`, but it is a field precisely because it varies with the stub's size. `MZ` at offset 0 is for a machine that stopped existing decades ago; `PE\0\0` at `e_lfanew` is the one every real tool uses. An ELF has exactly one magic, always at offset 0, and that is the whole difference in navigation cost.
 </Callout>
 
 ### 2. Disk representation vs. memory representation
@@ -303,13 +303,13 @@ Everything cross-checks: entry `0x140000000 + 0x12e4` = `0x1400012e4`, matching 
 
 Four differences matter:
 
-**Two different alignments.** On disk sections are packed to `FileAlignment` (`0x200`, 512 bytes) to keep the file small. In memory they are laid out on `SectionAlignment` (`0x1000`, one page) because permissions are enforced per page. Every section therefore starts at a *different* offset in each view — `.rdata` is at file offset `0x15200` but RVA `0x16000` — and the gaps between sections in memory are pure alignment slack that does not exist on disk.
+**Two different alignments.** On disk sections are packed to `FileAlignment` (`0x200`, 512 bytes) to keep the file small. In memory they are laid out on `SectionAlignment` (`0x1000`, one page) because permissions are enforced per page. Every section therefore starts at a *different* offset in each view (`.rdata` is at file offset `0x15200` but RVA `0x16000`), and the gaps between sections in memory are pure alignment slack that does not exist on disk.
 
 **Everything shifts by `ImageBase`.** On disk you index from 0. In memory every address is `0x140000000` plus the RVA, assuming the image got its preferred base at all.
 
 **`VirtualSize` can exceed `SizeOfRawData`.** `.data` occupies `0xc00` bytes in the file but `0x1be0` in memory; the loader zero-fills the extra `0xfe0`. This is exactly ELF's `p_memsz > p_filesz` trick, and it is how PE expresses uninitialized data without a separate `.bss`.
 
-**Some sections are discardable.** `.reloc` carries `IMAGE_SCN_MEM_DISCARDABLE`; once the loader has applied base relocations it may drop those pages entirely. ELF has no equivalent — it never maps `.symtab` in the first place, whereas PE maps `.reloc` and then throws it away.
+**Some sections are discardable.** `.reloc` carries `IMAGE_SCN_MEM_DISCARDABLE`; once the loader has applied base relocations it may drop those pages entirely. ELF has no equivalent: it never maps `.symtab` in the first place, whereas PE maps `.reloc` and then throws it away.
 
 ### 3. PE vs. ELF
 
@@ -348,15 +348,15 @@ The constructs differ in five visible ways:
 
 **Calling convention.** System V AMD64 passes the first integer argument in `rdi`; Microsoft x64 uses `rcx`. The two ABIs disagree on argument registers, callee-saved registers, and red zone, so the same C source produces visibly different register traffic.
 
-**Shadow space.** `sub rsp,0x28` is not a local-variable frame — Microsoft x64 requires the caller to reserve 32 bytes of "shadow space" for the callee to spill its four register arguments into, plus 8 for stack alignment. A `sub rsp,0x28` in a function whose body has no locals at all is a reliable Microsoft-ABI tell; System V has no shadow space and instead gives leaf functions a 128-byte red zone below `rsp`.
+**Shadow space.** `sub rsp,0x28` is not a local-variable frame. Microsoft x64 requires the caller to reserve 32 bytes of "shadow space" for the callee to spill its four register arguments into, plus 8 for stack alignment. A `sub rsp,0x28` in a function whose body has no locals at all is a reliable Microsoft-ABI tell; System V has no shadow space and instead gives leaf functions a 128-byte red zone below `rsp`.
 
 **`int3` padding.** GCC pads with `nop`; MSVC pads with `int3` (`0xcc`), the breakpoint instruction. My 140 KB hello world contains **1,646** of them. The logic is defensive: padding is never meant to execute, and if control ever reaches it, trapping to the debugger beats silently running through junk.
 
-**Direct calls vs PLT calls.** The ELF binary reaches `puts` through `puts@plt`, a stub, because libc is a shared object. The PE binary calls `0x140001030` directly, because MSVC statically linked the CRT — `printf` is compiled into the binary itself. Only genuine OS calls into `KERNEL32.dll` go through the IAT.
+**Direct calls vs PLT calls.** The ELF binary reaches `puts` through `puts@plt`, a stub, because libc is a shared object. The PE binary calls `0x140001030` directly, because MSVC statically linked the CRT, so `printf` is compiled into the binary itself. Only genuine OS calls into `KERNEL32.dll` go through the IAT.
 
-**Different control-flow integrity.** The gcc build contains 9 `endbr64` instructions, Intel CET landing pads; the MSVC build contains **zero**. That does not mean it is unprotected — it uses Windows' own scheme, Control Flow Guard, and the evidence is in the Load Configuration Directory rather than in the instruction stream:
+**Different control-flow integrity.** The gcc build contains 9 `endbr64` instructions, Intel CET landing pads; the MSVC build contains **zero**. That does not mean it is unprotected. It uses Windows' own scheme, Control Flow Guard, and the evidence is in the Load Configuration Directory rather than in the instruction stream:
 
-<TerminalBlock label="the Load Config directory — CFG instead of CET">
+<TerminalBlock label="the Load Config directory: CFG instead of CET">
 ```bash
 LoadConfig  RVA 0x1e540  size 0x140          # DataDirectory[10]
   GuardCFCheckFunctionPointer     0x140016268   (.rdata)
@@ -368,7 +368,7 @@ LoadConfig  RVA 0x1e540  size 0x140          # DataDirectory[10]
 So the same defensive goal shows up in two completely different places: as an opcode at every function entry on Linux, and as a pair of pointers plus a flag word in a header directory on Windows. If you grep a PE for `endbr64` and conclude "no CFI," you have looked in the wrong place.
 
 <Callout title="The pattern that actually matters for RE: int3 vs nop" variant="amber">
-  If you are trying to fingerprint an unknown binary's toolchain, the padding byte is the cheapest signal. A `.text` section shot through with `cc cc cc cc` is Visual Studio; runs of `90` or multi-byte `nop word ptr [rax+rax*1+0x0]` are GCC or Clang. The book adds a wrinkle worth knowing: with `/hotpatch`, MSVC emits **five** `int3` bytes before each function plus a two-byte `mov edi,edi` at the entry, so a function can be live-patched by overwriting the padding with a long jump and the `mov` with a short one.
+  If you are trying to fingerprint an unknown binary's toolchain, the padding byte is the cheapest signal. A `.text` section shot through with `cc cc cc cc` is Visual Studio; runs of `90` or multi-byte `nop word ptr [rax+rax*1+0x0]` are GCC or Clang. The book adds a wrinkle useful to know: with `/hotpatch`, MSVC emits **five** `int3` bytes before each function plus a two-byte `mov edi,edi` at the entry, so a function can be live-patched by overwriting the padding with a long jump and the `mov` with a short one.
 </Callout>
 
 <Callout title="Read-only data inside .text" variant="red">

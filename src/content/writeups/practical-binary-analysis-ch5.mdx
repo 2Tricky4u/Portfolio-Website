@@ -1,0 +1,487 @@
+---
+title: 'Practical Binary Analysis, Ch. 5: Basic Binary Analysis in Linux'
+description: 'Notes and solved exercises for the standard Linux toolbox: file, ldd, xxd, dd, readelf, nm, strings, strace, ltrace, objdump and gdb, chained to pull a flag out of a mystery payload, plus the oracle-unlocked bonus levels, from Dennis Andriesse''s Practical Binary Analysis.'
+pubDate: 2026-07-20
+tags: [binary-analysis, ctf, reverse-engineering, linux]
+---
+
+import TerminalBlock from '../../components/TerminalBlock.astro';
+import Callout from '../../components/Callout.astro';
+import PayloadOnionFigure from '../../components/PayloadOnionFigure.astro';
+import GuessmeLoopFigure from '../../components/GuessmeLoopFigure.astro';
+
+Notes on Chapter 5 of *Practical Binary Analysis* by Dennis Andriesse. This chapter is different from the first four: instead of explaining tools one by one, it runs a **Capture the Flag** challenge and introduces each tool at the moment you need it. You start with a file called `payload` and no hints, and you finish with a flag.
+
+Everything below is the author's actual challenge, from the code archive he publishes at [practicalbinaryanalysis.com](https://practicalbinaryanalysis.com/) (`pba-code.tar.gz`, 6.9 MB). I ran all of it inside WSL2, since the book's own advice is not to run unknown binaries outside a VM. These binaries are 2018 vintage, so two of them needed coaxing to run on Ubuntu 22.04 at all.
+
+<TerminalBlock label="the whole toolbox">
+```bash
+file <f>          # what is this? (magic bytes, not extensions)
+file -z <f>       # look inside compressed files without extracting
+xxd <f>           # hex + ASCII dump;  -s seek  -l length  -b binary  -i C array
+dd if= of= bs=1 skip= count=       # carve bytes out of a file
+readelf -h / -s   # parse ELF headers and symbol tables
+nm -D --demangle  # list symbols; -D reads .dynsym when the file is stripped
+c++filt <sym>     # demangle one C++ name
+strings <f>       # printable runs;  -d data sections only  -n min length
+ldd <f>           # shared-library dependencies (runs the binary, VM only)
+strace <cmd>      # system calls
+ltrace -i -C      # library calls;  -i show IP  -C demangle
+objdump -d / -s   # disassemble / dump raw section contents
+gdb               # break, run, info registers, x/s
+```
+</TerminalBlock>
+
+## Peeling the payload
+
+`file` does not trust extensions; it reads magic bytes. That makes it the right first move on an unknown blob.
+
+<TerminalBlock label="what is this thing?">
+```bash
+$ file payload
+payload: ASCII text
+
+$ head -n 3 payload
+H4sIABzY61gAA+xaD3RTVZq/Sf+lFJIof1r+2aenKKh0klJKi4MmJaUvWrTSFlgR0jRN20iadpKX
+UljXgROKjbUOKuOfWWfFnTlzZs/ZXTln9nTRcTHYERhnZ5c/R2RGV1lFTAFH/DNYoZD9vvvubd57
+bcBl1ln3bL6e9Hvf9+733e/+v+/en0dqId80WYAWLVqI3LpooUXJgUpKFy6yEOsCy6KSRQtLLQsW
+```
+</TerminalBlock>
+
+Only `A–Z a–z 0–9 + /`, in neat fixed-width rows. That alphabet is Base64. Decoding it starts a chain that goes four layers deep.
+
+<TerminalBlock label="down the layers">
+```bash
+$ base64 -d payload > decoded_payload
+$ file decoded_payload
+decoded_payload: gzip compressed data, last modified: Mon Apr 10 19:08:12 2017, from Unix
+
+$ file -z decoded_payload
+decoded_payload: POSIX tar archive (GNU) (gzip compressed data, …)
+
+$ tar xvzf decoded_payload
+ctf
+67b8601
+
+$ file ctf
+ctf: ELF 64-bit LSB executable, x86-64, dynamically linked,
+     interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 2.6.32,
+     BuildID[sha1]=29aeb60bcee44b50d1db3a56911bd1de93cd2030, stripped
+
+$ file 67b8601
+67b8601: PC bitmap, Windows 3.x format, 512 x 512 x 24
+```
+</TerminalBlock>
+
+`file -z` is the nice trick here: it reports what is *inside* the gzip layer without extracting anything, so you learn it is a tar archive before committing to unpacking it.
+
+<PayloadOnionFigure />
+
+## ldd: a dependency that does not exist
+
+<TerminalBlock label="it will not even start">
+```bash
+$ ./ctf
+./ctf: error while loading shared libraries: lib5ae9b7f.so:
+       cannot open shared object file: No such file or directory
+
+$ ldd ctf
+        linux-vdso.so.1 (0x00007819b6692000)
+        lib5ae9b7f.so => not found
+        libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007819b6400000)
+        libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007819b6664000)
+        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007819b6000000)
+        libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007819b6319000)
+        /lib64/ld-linux-x86-64.so.2 (0x00007819b6694000)
+```
+</TerminalBlock>
+
+Exactly one dependency is missing, and its name is not something any distribution ships. So it has to be in the files I already have. From Chapter 2 I know every ELF starts with `\x7fELF`, which makes `grep` a workable search:
+
+<TerminalBlock label="grep for an ELF header">
+```bash
+$ grep 'ELF' payload decoded_payload ctf 67b8601
+grep: ctf: binary file matches
+grep: 67b8601: binary file matches
+```
+</TerminalBlock>
+
+`ctf` matching is expected. **`67b8601` matching is not.** That file claims to be a bitmap.
+
+<Callout title="ldd runs the binary" variant="red">
+  The chapter flags a manpage warning worth repeating: `ldd` may execute the program to resolve its dependencies, so pointing it at untrusted code is not safe. Use it in a VM, or use `readelf -d <file> | grep NEEDED`, which parses the `.dynamic` section statically and never runs anything, using the same `DT_NEEDED` tags from Chapter 2.
+</Callout>
+
+## xxd and dd: carving the library out
+
+<TerminalBlock label="xxd 67b8601 | head">
+```text
+00000000: 424d 3800 0c00 0000 0000 3600 0000 2800  BM8.......6...(.
+00000010: 0000 0002 0000 0002 0000 0100 1800 0000  ................
+00000020: 0000 0200 0c00 c01e 0000 c01e 0000 0000  ................
+00000030: 0000 0000 7f45 4c46 0201 0100 0000 0000  .....ELF........
+00000040: 0000 0000 0300 3e00 0100 0000 7009 0000  ......>.....p...
+00000050: 0000 0000 4000 0000 0000 0000 7821 0000  ....@.......x!..
+```
+</TerminalBlock>
+
+`BM` at offset 0 is a genuine bitmap header. The ELF magic sits at offset `0x34` = **52**. Finding where it *ends* is harder, because ELF has no end marker. The chapter's trick is to extract the 64-byte header first and let the header tell you the size.
+
+<TerminalBlock label="header first, then the arithmetic">
+```bash
+$ dd skip=52 count=64 if=67b8601 of=elf_header bs=1
+64+0 records in
+64+0 records out
+
+$ xxd elf_header
+00000000: 7f45 4c46 0201 0100 0000 0000 0000 0000  .ELF............
+00000010: 0300 3e00 0100 0000 7009 0000 0000 0000  ..>.....p.......
+00000020: 4000 0000 0000 0000 7821 0000 0000 0000  @.......x!......
+00000030: 0000 0000 4000 3800 0700 4000 1b00 1a00  ....@.8...@.....
+
+$ readelf -h elf_header
+  Type:                              DYN (Shared object file)
+  Entry point address:               0x970
+  Start of section headers:          8568 (bytes into file)
+  Size of section headers:           64 (bytes)
+  Number of section headers:         27
+readelf: Error: Reading 0x6c0 bytes extends past end of file for section headers
+```
+</TerminalBlock>
+
+`readelf` complains the tables are past the end of the file, which is true and harmless: I only extracted 64 bytes. The three numbers I need survive. Since the section header table is the last thing in an ELF:
+
+```
+size = e_shoff + (e_shnum × e_shentsize)
+     = 8568   + (27 × 64)
+     = 10296
+```
+
+<TerminalBlock label="carve the whole library">
+```bash
+$ dd skip=52 count=10296 if=67b8601 of=lib5ae9b7f.so bs=1
+10296+0 records in
+10296+0 records out
+10296 bytes (10 kB, 10 KiB) copied
+
+$ file lib5ae9b7f.so
+lib5ae9b7f.so: ELF 64-bit LSB shared object, x86-64, dynamically linked,
+               BuildID[sha1]=5279389c64af3477ccfdf6d3293e404fd9933817, stripped
+```
+</TerminalBlock>
+
+<Callout title="The arithmetic is exact, not an estimate" variant="teal">
+  `e_shoff` plus the full section header table lands precisely on the end of the file for any normally linked ELF, because the section header table is written last. That makes it a useful carving primitive: you can recover an entire embedded ELF knowing only its first 64 bytes. The ELF also starts at 52 while the bitmap's own header declares pixel data at offset 54, so the library overlaps the last two bytes of the BMP header. Sloppy of whoever hid it, and completely invisible to an image viewer.
+</Callout>
+
+## nm: reading stripped C++ symbols
+
+<TerminalBlock label="nm needs -D on a stripped file">
+```bash
+$ nm lib5ae9b7f.so
+nm: lib5ae9b7f.so: no symbols
+
+$ nm -D --demangle lib5ae9b7f.so
+0000000000000c60 T rc4_decrypt(rc4_state_t*, unsigned char*, int)
+0000000000000c70 T rc4_decrypt(rc4_state_t*, std::__cxx11::basic_string<…>&)
+0000000000000b40 T rc4_encrypt(rc4_state_t*, unsigned char*, int)
+0000000000000bc0 T rc4_encrypt(rc4_state_t*, std::__cxx11::basic_string<…>&)
+0000000000000cb0 T rc4_init(rc4_state_t*, unsigned char*, int)
+                 U std::__throw_logic_error(char const*)@GLIBCXX_3.4
+                 U malloc@GLIBC_2.2.5
+                 U memcpy@GLIBC_2.14
+
+$ c++filt _Z8rc4_initP11rc4_state_tPhi
+rc4_init(rc4_state_t*, unsigned char*, int)
+```
+</TerminalBlock>
+
+Plain `nm` fails because the file is stripped. That is Chapter 1's lesson again: `.symtab` gone, `.dynsym` retained. `-D` reads the dynamic table instead, and `--demangle` turns the mangled names into signatures.
+
+<Callout title="Mangling leaks the type signature for free" variant="blue">
+  C++ mangles names so the linker can disambiguate overloads, but the encoding contains the *parameter types*, so a stripped C++ binary hands you more type information than a stripped C one. Here it is decisive: five exported functions, an opaque `rc4_state_t*` that is obviously a context struct, and both a raw-buffer and a `std::string` overload of encrypt and decrypt. Before running anything, I know this is RC4 and I know two of its call shapes.
+</Callout>
+
+With the library in place the binary runs, after telling the loader where to look:
+
+<TerminalBlock label="LD_LIBRARY_PATH">
+```bash
+$ export LD_LIBRARY_PATH=`pwd`
+$ ./ctf ; echo "exit=$?"
+exit=1
+```
+</TerminalBlock>
+
+## strings: cheap hints
+
+<TerminalBlock label="strings ctf: the interesting ones">
+```bash
+DEBUG: argv[1] = %s
+checking '%s'
+show_me_the_flag
+flag = %s
+guess again!
+It's kinda like Louisiana. Or Dagobah. Dagobah - Where Yoda lives!
+```
+</TerminalBlock>
+
+A command-line argument is expected, something gets checked, and there is a suspiciously specific literal to try. The Dagobah line is a candidate RC4 key.
+
+<TerminalBlock label="guessing the argument">
+```bash
+$ ./ctf foobar
+checking 'foobar'
+exit=1
+
+$ ./ctf show_me_the_flag
+checking 'show_me_the_flag'
+ok
+exit=1
+```
+</TerminalBlock>
+
+The check passes, the exit status is still 1, and `strings` has nothing left to offer.
+
+## strace and ltrace
+
+`strace` shows system calls. For this binary it is almost all process setup, and the application's entire contribution is two `write`s and an exit. The chapter is upfront that this one is a dead end. `ltrace` traces *library* calls instead, and that changes everything:
+
+<TerminalBlock label="ltrace -i -C ./ctf show_me_the_flag">
+```bash
+[0x400fe9] __libc_start_main(0x400bc0, 2, 0x7ffea84d7578, 0x4010c0 <unfinished ...>
+[0x400c44] __printf_chk(1, 0x401158, 0x7ffea84d9137, 256)          = 28
+[0x400c51] strcmp("show_me_the_flag", "show_me_the_flag")          = 0
+[0x400cf0] puts("ok")                                              = 3
+[0x400d07] rc4_init(rc4_state_t*, unsigned char*, int)(…, 0x4011c0, 66, 3183) = 0
+[0x400d14] std::__cxx11::basic_string<…>::assign(char const*)(…, 0x40117b, 58, 3)
+[0x400d29] rc4_decrypt(rc4_state_t*, std::__cxx11::basic_string<…>&)(…)
+[0x400d36] std::__cxx11::basic_string<…>::_M_assign(…)             = 0
+[0x400d53] getenv("GUESSME")                                       = nil
+[0xffffffffffffffff] +++ exited (status 1) +++
+```
+</TerminalBlock>
+
+The whole plot in nine lines. The argument is checked with `strcmp`. The Dagobah string is the RC4 key, 66 bytes, passed straight to `rc4_init`. A 58-byte string is assigned and decrypted, and then `getenv` is called and returns `nil`. The program wants an environment variable whose **name was encrypted inside the binary**.
+
+<Callout title="ltrace needs its prototype config" variant="amber">
+  My first `ltrace` run printed `getenv(0x7ffea84d72c0, …)` instead of `getenv("GUESSME")`: raw pointers everywhere, and the reveal invisible. `ltrace` only formats arguments as strings for functions whose prototypes it knows, from `/etc/ltrace.conf`. I had installed it into a private prefix without that file, so it fell back to printing pointers. Passing `-F /path/to/ltrace.conf` fixed it. If your `ltrace` output looks uselessly numeric, this is why.
+</Callout>
+
+<TerminalBlock label="so set it">
+```bash
+$ GUESSME=foobar ./ctf show_me_the_flag
+checking 'show_me_the_flag'
+ok
+guess again!
+```
+</TerminalBlock>
+
+Tracing again with the variable set shows a second decryption and then `puts("guess again!")` with **no comparison call in between**. A secret is decrypted and compared to my input by code that calls nothing, so `ltrace` is blind to it. The next tool has to be a disassembler.
+
+## objdump: finding the comparison
+
+`objdump -s` locates `"guess again!"` at `0x4011af` in `.rodata`. Disassembling around the code that loads it exposes the loop:
+
+<TerminalBlock label="objdump -M intel -d ctf">
+```asm
+400dc0:  0f b6 14 03    movzx  edx,BYTE PTR [rbx+rax*1]  ; load your byte
+400dc4:  84 d2          test   dl,dl                     ; NUL -> too short
+400dc6:  74 05          je     400dcd                    ; ran out -> fail
+400dc8:  3a 14 01       cmp    dl,BYTE PTR [rcx+rax*1]   ; your byte vs truth byte
+400dcb:  74 13          je     400de0                    ; match -> keep going
+400dcd:  bf af 11 40 00 mov    edi,0x4011af              ; "guess again!"
+400dd2:  e8 d9 fc ff ff call   400ab0 <puts@plt>
+400de0:  48 83 c0 01    add    rax,0x1                   ; i++
+400de4:  48 83 f8 15    cmp    rax,0x15                  ; all 21 bytes done?
+400de8:  75 d6          jne    400dc0                    ; loop
+```
+</TerminalBlock>
+
+`rbx` is my string, `rcx` is the ground truth, `rax` is the index, and `0x15` = 21 is the expected length. The comparison at `0x400dc8` reads from a buffer that only exists after runtime decryption, so no amount of static analysis will show its contents.
+
+<GuessmeLoopFigure />
+
+## gdb: reading the answer out of a register
+
+<TerminalBlock label="break on the compare, dump rcx">
+```bash
+$ gdb -q ./ctf
+Reading symbols from ./ctf...
+(No debugging symbols found in ./ctf)
+(gdb) break *0x400dc8
+Breakpoint 1 at 0x400dc8
+(gdb) set env GUESSME=foobar
+(gdb) run show_me_the_flag
+checking 'show_me_the_flag'
+ok
+
+Breakpoint 1, 0x0000000000400dc8 in ?? ()
+(gdb) info registers rcx
+rcx            0x615ee0            6381280
+(gdb) info registers rax
+rax            0x0                 0
+(gdb) x/s $rcx
+0x615ee0:       "Crackers Don't Matter"
+```
+</TerminalBlock>
+
+`rax` is 0, so this is the first iteration and `rcx` points at the start of the string. And 21 characters is exactly the `0x15` the loop compares against.
+
+<TerminalBlock label="the flag">
+```bash
+$ GUESSME="Crackers Don't Matter" ./ctf show_me_the_flag
+checking 'show_me_the_flag'
+ok
+flag = 84b34c124b2ba5ca224af8e33b077e9e
+```
+</TerminalBlock>
+
+<Callout title="Nine tools, one flag, no reverse engineering of the crypto" variant="teal">
+  Notice what never happened: I never reimplemented RC4, never recovered the key schedule, never decrypted anything by hand. The library encrypts and decrypts on demand, so the winning move was to let the program do its own decryption and read the plaintext out of a register at exactly the right instruction. `file` and `xxd` found the pieces, `readelf` sized them, `nm` named the algorithm, `strings` guessed the password, `ltrace` found the variable, `objdump` found the instruction, and `gdb` read the answer. Each tool answered one question and handed off.
+</Callout>
+
+## Exercise: the levels the oracle unlocks
+
+> **A New CTF Challenge.** Complete the new CTF challenge unlocked by the oracle program!
+
+<TerminalBlock label="feeding the flag to the oracle">
+```bash
+$ ./oracle 84b34c124b2ba5ca224af8e33b077e9e
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
+| Level 1 completed, unlocked lvl2         |
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
+Run oracle with -h to show a hint
+```
+</TerminalBlock>
+
+<Callout title="Getting the 2018 binaries to run at all" variant="amber">
+  `oracle` failed immediately with `libcrypto.so.1.0.0: cannot open shared object file`. It was built against OpenSSL 1.0, which Ubuntu dropped after 18.04. Version 22.04 ships `libcrypto.so.3`, and the soname is not compatible. Since installing needs root, I pulled `libssl1.0.0_1.0.2n-1ubuntu5.13_amd64.deb` from the Ubuntu archive, unpacked it with `dpkg -x` into a private prefix, and pointed `LD_LIBRARY_PATH` at it. This is the ordinary fate of old binaries: `ldd` tells you the soname, and an unpacked `.deb` plus `LD_LIBRARY_PATH` resolves it without touching the system.
+</Callout>
+
+### Level 2: "Combine the parts"
+
+`lvl2` is a stripped ELF that links only libc and imports `srand`, `time`, `rand` and `puts`. Running it prints a different two-hex-digit value every second:
+
+<TerminalBlock label="it emits one piece at a time">
+```bash
+$ for i in $(seq 1 6); do ./lvl2; sleep 1.05; done
+74
+d6
+f8
+df
+74
+d6
+```
+</TerminalBlock>
+
+Sampling it repeatedly gives you the *set* of parts but never their **order**, and a flag is an ordered 32-hex string. So this is a static problem rather than a dynamic one. The whole program is 14 instructions:
+
+<TerminalBlock label="objdump -M intel -d lvl2">
+```asm
+400500:  sub    rsp,0x8
+400504:  xor    edi,edi
+400506:  call   4004d0 <time@plt>
+40050b:  mov    edi,eax
+40050d:  call   4004c0 <srand@plt>          ; srand(time(NULL))
+400512:  call   4004e0 <rand@plt>
+400518:  shr    edx,0x1c                    ;
+40051d:  and    eax,0xf                     ; rand() % 16
+400524:  mov    rdi,QWORD PTR [rax*8+0x601060]  ; <- table of 16 pointers
+40052c:  call   4004a0 <puts@plt>
+```
+</TerminalBlock>
+
+There is a **table of 16 pointers at `0x601060`**, and its order is the answer. Dumping both the table and what it points at:
+
+<TerminalBlock label="objdump -s: the table and the strings">
+```text
+Contents of section .data:
+ 601060 c4064000 00000000 c7064000 00000000   -> 0x4006c4, 0x4006c7
+ 601070 ca064000 00000000 cd064000 00000000   -> 0x4006ca, 0x4006cd
+ ...                                          (16 entries, 3 bytes apart)
+
+Contents of section .rodata:
+ 4006c0 01000200 30330034 66006334 00663600  ....03.4f.c4.f6.
+ 4006d0 61350033 36006632 00626600 37340066  a5.36.f2.bf.74.f
+ 4006e0 38006436 00643300 38310036 63006466  8.d6.d3.81.6c.df
+ 4006f0 00383800                             .88.
+```
+</TerminalBlock>
+
+Walking the pointers in table order gives `03 4f c4 f6 a5 36 f2 bf 74 f8 d6 d3 81 6c df 88`:
+
+<TerminalBlock label="level 2 solved">
+```bash
+$ ./oracle 034fc4f6a536f2bf74f8d6d3816cdf88
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
+| Level 2 completed, unlocked lvl3         |
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
+```
+</TerminalBlock>
+
+### Level 3: "Fix four broken things"
+
+This one is a pure Chapter 2 exam. `lvl3` will not run at all, and `file` reports nonsense:
+
+<TerminalBlock label="a deliberately corrupted ELF">
+```bash
+$ file lvl3
+lvl3: ELF 64-bit LSB executable, Motorola Coldfire, version 1 (Novell Modesto),
+      can't read elf program headers at 4022250974, …, stripped
+
+$ ./lvl3
+bash: ./lvl3: cannot execute binary file: Exec format error
+
+$ xxd -l 64 lvl3
+00000000: 7f45 4c46 0201 010b 0000 0000 0000 0000  .ELF............
+00000010: 0200 3400 0100 0000 d005 4000 0000 0000  ..4.......@.....
+00000020: dead beef 0000 0000 8011 0000 0000 0000  ................
+00000030: 0000 0000 4000 3800 0900 4000 1d00 1c00  ....@.8...@.....
+```
+</TerminalBlock>
+
+Three breaks are visible in that dump, and the fourth is one section header deeper:
+
+| # | Field | Broken value | Should be |
+| --- | --- | --- | --- |
+| 1 | `e_ident[EI_OSABI]` @ `0x07` | `0x0b` (Novell Modesto) | `0x00` (System V) |
+| 2 | `e_machine` @ `0x12` | `0x0034` (EM_COLDFIRE) | `0x003e` (EM_X86_64) |
+| 3 | `e_phoff` @ `0x20` | `0xdeadbeef` | `0x40` |
+| 4 | `.text` `sh_type` | `SHT_NOBITS` | `SHT_PROGBITS` |
+
+The fourth only shows up once the first three are fixed and `readelf -S` will parse: every other code section is `PROGBITS`, but `.text` claims to occupy no file space at all. `.text` is at section index 14, so its header is at `e_shoff + 14×64` = `0x1180 + 0x380` = `0x1500`, and `sh_type` sits at `+4`.
+
+<TerminalBlock label="patch all four, then run it">
+```python
+d = bytearray(open('lvl3','rb').read())
+d[0x07]        = 0x00                          # EI_OSABI  -> System V
+d[0x12:0x14]   = (0x3e).to_bytes(2,'little')   # e_machine -> EM_X86_64
+d[0x20:0x28]   = (0x40).to_bytes(8,'little')   # e_phoff   -> 0x40
+d[0x1504:0x1508] = (1).to_bytes(4,'little')    # .text     -> SHT_PROGBITS
+open('lvl3_repaired','wb').write(d)
+```
+</TerminalBlock>
+
+<Callout title="The flag is the checksum of the repair" variant="red">
+  The repaired binary prints `3a5c381e40d2fffd95ba4452a0fb4a40  ./lvl3_repaired`, which is exactly `md5sum` of itself. It is a neat piece of puzzle design: the program hashes its own file, so the flag is only correct if your repair is **byte-for-byte** the original. Fix three of four and you get a plausible-looking hash that the oracle rejects. There is no partial credit, and no way to guess the answer without actually knowing what each field should contain.
+</Callout>
+
+<TerminalBlock label="level 3 solved">
+```bash
+$ ./oracle 3a5c381e40d2fffd95ba4452a0fb4a40
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
+| Level 3 completed, unlocked lvl4         |
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
+
+$ ./oracle 3a5c381e40d2fffd95ba4452a0fb4a40 -h
+Watch closely while I run
+```
+</TerminalBlock>
+
+`lvl4` is unlocked and its hint points straight back at `strace`/`ltrace`/`gdb`. That is where I stopped, since the exercise asked for the level the flag unlocks and levels 2 and 3 are both done.
+
+## Summary
+
+The chapter's real argument is that the standard toolbox composes. Nothing used here is specialised: `file`, `head`, `base64`, `tar`, `grep`, `xxd`, `dd`, `readelf`, `nm`, `c++filt`, `strings`, `ldd`, `strace`, `ltrace`, `objdump`, `gdb`. Every one ships with a stock Linux install, and the flag falls out of using them in the right order.
+
+The two moments that actually mattered were both handoffs. `ltrace` showing `getenv("GUESSME")` turned an unknown program into a known question, and `objdump` narrowing the check to `0x400dc8` turned that question into a single `gdb` breakpoint. The bonus levels then invert the lesson: level 2 looks dynamic and is solved statically, level 3 is solved entirely with Chapter 2's knowledge of the ELF header. Chapter 6 moves on to disassembly proper.

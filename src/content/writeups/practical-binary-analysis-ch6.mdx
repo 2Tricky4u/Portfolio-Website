@@ -1,0 +1,224 @@
+---
+title: 'Practical Binary Analysis, Ch. 6: Disassembly Fundamentals'
+description: 'Notes and solved exercises on how disassemblers actually work: linear sweeps that decode data as code, recursive traversal that gives up at the first indirect jump, and what it takes to push coverage back up, from Dennis Andriesse''s Practical Binary Analysis.'
+pubDate: 2026-08-03
+tags: [binary-analysis, disassembly, reverse-engineering, capstone]
+---
+
+import TerminalBlock from '../../components/TerminalBlock.astro';
+import Callout from '../../components/Callout.astro';
+import DesyncFigure from '../../components/DesyncFigure.astro';
+import CoverageFigure from '../../components/CoverageFigure.astro';
+
+Notes on Chapter 6 of *Practical Binary Analysis* by Dennis Andriesse, plus my solutions to the exercises. After five chapters of *what binaries contain*, this one asks a harder question: given a blob of bytes, which of them are instructions? The honest answer is that nobody knows for sure, and every disassembler is a different bet on how to guess.
+
+The chapter is mostly theory, so instead of quoting it I built the two failure modes it describes and measured them. The book uses IDA Pro, which I do not have a licence for, so I wrote a recursive disassembler in about 120 lines of Python on top of **capstone**, the same engine the book reaches for in Chapter 8. That turns out to be the better way to learn this material anyway: the algorithms are short, and watching your own implementation fail is more convincing than reading that IDA sometimes does.
+
+<TerminalBlock label="the setup">
+```bash
+pip3 install --user capstone           # 5.0.7 here
+
+gcc -O0 -no-pie confuse.c -o confuse   # exercise 1: inline data
+gcc -O2 -no-pie tricky.c  -o tricky    # exercise 2: three kinds of indirect control flow
+gcc -O0 -no-pie tricky.c  -o tricky_O0 # same source, to compare compiler settings
+
+objdump -M intel -d <bin>              # linear disassembly
+python3 rdisasm.py <bin> --recursive   # mine
+```
+</TerminalBlock>
+
+## Two ways to find instructions
+
+**Linear disassembly** starts at the beginning of `.text` and decodes straight through, instruction after instruction, until it runs out of bytes. It is what `objdump` does. It sees every byte, which sounds ideal until you remember that not every byte is an instruction.
+
+**Recursive disassembly** starts at known entry points and follows control flow: at a `jmp` it goes to the target, at a conditional branch it takes both edges, at a `call` it queues the callee and continues after the return. It only decodes bytes it can prove are reachable, so it steps around data. The catch is that plenty of control flow cannot be resolved without running the program.
+
+Neither is correct. They fail in opposite directions, and the rest of the chapter is about how.
+
+## Exercise 1: confusing objdump
+
+> Write a program that confuses objdump such that it interprets data as code, or vice versa. You'll probably need to use some inline assembly to achieve this.
+
+Four bytes are enough. The trick is to put data in `.text` and jump over it, so the program is correct at runtime while a linear sweep walks straight into it.
+
+<TerminalBlock label="confuse.c">
+```c
+asm(
+".text                       \n"
+".globl trap_linear          \n"
+"trap_linear:                \n"
+"   jmp   .Lreal             \n"
+"   .byte 0x8e, 0x20, 0x5c, 0x00   /* inline data, never executed */ \n"
+".Lreal:                     \n"
+"   push  %rbp               \n"
+"   mov   %rsp, %rbp         \n"
+"   sub   $0x10, %rsp        \n"
+"   mov   %edi, -0x4(%rbp)   \n"
+"   mov   -0x4(%rbp), %eax   \n"
+"   add   $1, %eax           \n"
+"   leave                    \n"
+"   ret                      \n"
+);
+```
+</TerminalBlock>
+
+The program works: `trap_linear(41)` returns 42. Here is what `objdump` makes of it.
+
+<TerminalBlock label="objdump -M intel -d confuse">
+```asm
+0000000000401136 <trap_linear>:
+  401136:  eb 04           jmp    40113c <trap_linear+0x6>
+  401138:  8e 20           mov    fs,WORD PTR [rax]
+  40113a:  5c              pop    rsp
+  40113b:  00 55 48        add    BYTE PTR [rbp+0x48],dl
+  40113e:  89 e5           mov    ebp,esp
+  401140:  48 83 ec 10     sub    rsp,0x10
+  401144:  89 7d fc        mov    DWORD PTR [rbp-0x4],edi
+```
+</TerminalBlock>
+
+The four data bytes became `mov fs,[rax]` and `pop rsp`, which is bad but survivable. The damage is the third instruction. `add BYTE PTR [rbp+0x48],dl` is three bytes long, so it starts inside the data and finishes inside the real code, swallowing the `push rbp` that should have been there. The `mov ebp,esp` on the next line is the mangled remains of `mov rbp,rsp`.
+
+<DesyncFigure />
+
+Two real instructions are gone from the listing entirely, and nothing marks the loss. The sweep resynchronises at `sub rsp,0x10` and everything after that is correct again, which is the dangerous part: the output looks fine, so an automated tool has no reason to distrust it.
+
+<Callout title="Why x86 resynchronises on its own" variant="blue">
+  Variable-length instructions are what caused the desynchronisation, and they are also what fixes it. Once the decoder is off by a few bytes it keeps producing garbage, but each garbage instruction has some length, and sooner or later one of them happens to end exactly on a real instruction boundary. From that point the stream is correct again. On x86 this usually takes only two or three instructions. It is a lucky property of a dense encoding rather than anything anyone designed, and it is why the book calls linear disassembly safe enough for gcc-compiled ELF binaries in practice: gcc does not put data in `.text`, so the situation never arises. Visual Studio does, which is the Chapter 3 warning showing up again.
+</Callout>
+
+## Exercise 2: confusing a recursive disassembler
+
+> Write another program, this time so that it tricks your favorite recursive disassembler's function detection algorithm. For instance, you could create a tail-called function or a function that has a switch with multiple return cases.
+
+I put three different unfollowable edges in one program: an indirect call through a table of function pointers, a switch dense enough that gcc emits a jump table, and a tail call. At `-O2` gcc obliges on all three.
+
+<TerminalBlock label="the three traps, as compiled">
+```asm
+; 1. tail call: tail_target is reached by jmp, never by call
+0000000000004012c0 <tail_caller>:
+  4012c4:  eb ea              jmp    4012b0 <tail_target>
+
+; 2. indirect call through table[] (gcc turned it into an indirect jmp)
+0000000000401210 <dispatch>:
+  401233:  48 8d 15 c6 2b ..  lea    rdx,[rip+0x2bc6]   # 403e00 <table>
+  40123c:  ff 24 c2           jmp    QWORD PTR [rdx+rax*8]
+
+; 3. switch jump table: targets live in .rodata as 32-bit deltas
+0000000000401240 <classify>:
+  401247:  77 5c              ja     4012a5              ; default case
+  401249:  48 8d 15 b4 0d ..  lea    rdx,[rip+0xdb4]     # 402004
+  401252:  48 63 04 ba        movsxd rax,DWORD PTR [rdx+rdi*4]
+  401256:  48 01 d0           add    rax,rdx
+  401259:  3e ff e0           notrack jmp rax
+```
+</TerminalBlock>
+
+My recursive disassembler follows direct jumps and calls and stops when it cannot resolve a target. Seeded only with the ELF entry point, this is how far it gets:
+
+<TerminalBlock label="python3 rdisasm.py tricky --recursive">
+```bash
+linear      : 169 instructions, 598/598 bytes (100.0%)
+recursive   :  13 instructions, 38/598 bytes (6.4%)   seeds=entry only
+              unresolved indirect jumps: 0
+              missed functions: main, hidden_a, hidden_b, hidden_c,
+                                dispatch, classify, tail_target, tail_caller
+```
+</TerminalBlock>
+
+Thirteen instructions. It missed **`main`**, which is not a trap I set at all.
+
+<Callout title="A recursive disassembler cannot even find main" variant="red">
+  `_start` does not call `main`. It loads main's address into `rdi` and calls `__libc_start_main`, which calls it later through that register. There is no direct edge from `_start` to `main` anywhere in the binary, so following control flow from the entry point reaches the C runtime and stops. Every real recursive disassembler special-cases this, either by recognising the `__libc_start_main` idiom or by reading the symbol table. So the single most important function in the program is invisible to the algorithm, and the fix is a hard-coded heuristic about one specific libc function.
+</Callout>
+
+## Exercise 3: improving function detection
+
+> Write a plugin for your recursive disassembler of choice so that it can better detect functions such as those the disassembler missed in the previous exercise.
+
+The exercise asks for an IDA or Hopper plugin. Since the disassembler here is mine, the plugin is just two extra passes, and they map onto the two things a real disassembler does when control flow runs out.
+
+**Pass one, prologue scanning.** Sweep the bytes nothing reached and look for shapes that start functions: `55 48 89 e5` (`push rbp; mov rbp,rsp`) and `f3 0f 1e fa` (`endbr64`). Anything that matches becomes a new seed. This is exactly the heuristic Chapter 1 used to recover function boundaries from a stripped binary.
+
+**Pass two, jump-table resolution.** The `classify` switch reads 32-bit values from `.rodata` and adds them to the table's own address. So walk `.rodata` looking for runs of four or more consecutive `int32` values that, added to their own address, land inside `.text`. That signature is specific enough to be safe and recovers every case body at once.
+
+<TerminalBlock label="the improvement passes">
+```python
+# (a) prologue scan over bytes nothing reached
+for i in range(len(code) - 4):
+    a = base + i
+    if a in seen: continue
+    if code[i:i+4] in (b"\x55\x48\x89\xe5", b"\xf3\x0f\x1e\xfa"):
+        work.append(a); drain()
+
+# (b) relative jump tables: .rodata holds int32 deltas from the table base
+for off in range(0, len(rdata) - 4, 4):
+    tb, hits = rbase + off, []
+    for k in range(0, 64, 4):
+        delta = struct.unpack_from("<i", rdata, off + k)[0]
+        t = tb + delta
+        if base <= t < end: hits.append(t)
+        else: break
+    if len(hits) >= 4:                       # looks like a real table
+        for t in hits: work.append(t); drain()
+```
+</TerminalBlock>
+
+<TerminalBlock label="all four configurations, same binary">
+```bash
+linear      : 169 instructions, 598/598 bytes (100.0%)
+recursive   :  13 instructions,  38/598 bytes (  6.4%)   seeds=entry only
+recursive   : 121 instructions, 392/598 bytes ( 65.6%)   seeds=entry+symbols
+recursive   : 154 instructions, 475/598 bytes ( 79.4%)   seeds=entry only +improve
+              recovered by prologue scan: 7, by jump table: 17
+```
+</TerminalBlock>
+
+<CoverageFigure />
+
+Two heuristics worth about thirty lines take coverage from 6.4% to 79.4%, and they beat the symbol table. That last part surprised me until I looked at why: the symbol table names functions, but the switch case bodies inside `classify` are not separate symbols, so seeding from symbols never reaches them. Reading the jump table does.
+
+<Callout title="What the remaining 20% is" variant="amber">
+  Four indirect jumps are still unresolved, and the bytes behind them stay dark. Three are PLT-style dispatch in the C runtime and one is the `table[]` indirect call from `dispatch`, whose targets are function pointers stored in `.data.rel.ro` rather than a pattern I taught the tool to read. I could add another heuristic for that, and then another for the next case, which is the actual lesson: recursive disassembly is a base algorithm plus an open-ended pile of format-specific and compiler-specific guesses. Every one of them is a place a deliberately obfuscated binary can lie to you.
+</Callout>
+
+## What the compiler does to all of this
+
+Same source, same traps, compiled at `-O0` instead of `-O2`:
+
+<TerminalBlock label="tricky_O0, gcc -O0">
+```bash
+linear      : 217 instructions, 683/683 bytes (100.0%)
+recursive   :  13 instructions,  38/683 bytes (  5.6%)   seeds=entry only
+recursive   : 221 instructions, 656/683 bytes ( 96.0%)   seeds=entry only +improve
+              recovered by prologue scan: 11, by jump table: 15
+```
+</TerminalBlock>
+
+The unoptimised build reaches 96% where the optimised one managed 79%, from identical source and identical heuristics. The reason is that `-O0` keeps frame pointers, so every function opens with `push rbp; mov rbp,rsp` and the prologue scan finds all of them. At `-O2` gcc drops the frame pointer, and that four-byte signature mostly stops existing.
+
+<Callout title="Optimisation level is an analysis parameter" variant="teal">
+  Chapter 1 made this point about readability, that `-O2` inlines and reorders until the assembly stops resembling the source. Here it shows up as a number: the same tool recovers 96% of one binary and 79% of the other because one of them kept a two-instruction convention the tool knows how to look for. Prologue scanning is not a fact about x86, it is a fact about how a particular compiler at a particular optimisation level happens to open its functions. Notice also that the `-O0` recursive run finds *more instructions* than the linear one, 221 against 217, while covering fewer bytes. They disagree about where instruction boundaries are in the padding between functions, and both answers are defensible.
+</Callout>
+
+## Structuring what you found
+
+Finding the instructions is step one. The chapter's second half is about the structures every analysis is built on, and they stack in a fixed order.
+
+**Basic blocks** are runs of instructions with one entry and one exit: control flow enters at the top and leaves at the bottom, with no branches in between. A block ends at any branch, and a new one starts at any branch target.
+
+**The control-flow graph** connects basic blocks within a function, with an edge for every possible transfer. This is what IDA's graph view draws, and what the loop and reachability questions in the next chapters get asked against.
+
+**The call graph** does the same one level up, with functions as nodes and call sites as edges. Both are only as complete as the disassembly underneath them, so every indirect jump my tool could not resolve is a missing edge in both graphs.
+
+The chapter also covers **decompilation**, which lifts disassembly toward C, and **intermediate representations** like VEX or LLVM IR, which lower it into something uniform enough to write analyses against without handling x86's several thousand instruction forms. Both sit on top of the same shaky foundation, which is why the chapter spends its first half on why that foundation is shaky.
+
+<Callout title="Sound, complete, pick at most one" variant="blue">
+  The chapter's analysis-properties section is the framing to carry forward. A **sound** analysis never reports something false: if it says a value is always positive, it is. A **complete** analysis never misses anything true. For real binaries you cannot have both, because the underlying questions are undecidable, so every tool picks a side and lives with it. A linear sweep is complete about bytes and unsound about which ones are code. Recursive disassembly is much closer to sound and badly incomplete. Knowing which side a tool errs on tells you exactly which of its answers you are allowed to trust.
+</Callout>
+
+## Summary
+
+Both algorithms are two dozen lines, and both are wrong in ways you can measure in an afternoon. A linear sweep will confidently print instructions that were never instructions, and four bytes of data are enough to make it eat two real ones. Recursive traversal will not lie to you, but starting from the entry point it found 6.4% of a 598-byte `.text` and could not locate `main`.
+
+What closes the gap is not a better algorithm, it is assumptions: that functions begin with a particular byte pattern, that a run of int32 deltas in `.rodata` is a jump table, that the thing after `_start` is `main`. Each one is a guess about a compiler rather than a fact about the architecture, which is why the same tool scores 96% on a `-O0` build and 79% on `-O2`. Chapter 7 stops reading binaries and starts modifying them.

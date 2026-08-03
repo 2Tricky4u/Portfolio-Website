@@ -1,0 +1,251 @@
+---
+import FigureFrame from './FigureFrame.astro';
+
+interface Props {
+  label?: string;
+}
+
+const { label = 'payload · five layers deep' } = Astro.props;
+---
+
+<FigureFrame label={label}>
+  <svg
+    viewBox="0 0 936 470"
+    role="img"
+    aria-label="The payload file is five nested layers. The outermost is Base64 ASCII text, peeled with base64 minus d. Inside that is gzip compressed data, and inside that a POSIX tar archive, both identified with file and extracted with tar. The archive yields two files: a stripped ELF executable named ctf, and a 512 by 512 bitmap. The bitmap is the last layer: a shared library is hidden inside it starting at byte offset 52, recovered with dd once the ELF header reveals the library's size. Each layer is identified by file and opened by a different standard tool."
+  >
+    <defs>
+      <marker
+        id="po-arrow"
+        markerUnits="userSpaceOnUse"
+        markerWidth="9"
+        markerHeight="9"
+        refX="8.5"
+        refY="4.5"
+        orient="auto"
+      >
+        <path d="M0,0 L9,4.5 L0,9 Z" class="arrow-head"></path>
+      </marker>
+      <pattern id="po-grid" width="22" height="22" patternUnits="userSpaceOnUse">
+        <circle cx="1.5" cy="1.5" r="1" class="grid-dot"></circle>
+      </pattern>
+    </defs>
+
+    <rect x="0" y="0" width="936" height="470" fill="url(#po-grid)"></rect>
+
+    <!-- nested layers -->
+    <rect class="box l1" x="40" y="34" width="470" height="404" rx="8"></rect>
+    <text class="ltitle lbl-red" x="56" y="56">payload, ASCII text</text>
+    <text class="lsub" x="56" y="72">alphabet is A–Z a–z 0–9 + / → Base64</text>
+
+    <rect class="box l2" x="66" y="88" width="418" height="330" rx="8"></rect>
+    <text class="ltitle lbl-amber" x="82" y="110">decoded_payload, gzip</text>
+    <text class="lsub" x="82" y="126">file: gzip compressed data, from Unix</text>
+
+    <rect class="box l3" x="92" y="142" width="366" height="256" rx="8"></rect>
+    <text class="ltitle lbl-teal" x="108" y="164">POSIX tar archive (GNU)</text>
+    <text class="lsub" x="108" y="180">found with file -z, without extracting</text>
+
+    <rect class="box l4a" x="118" y="198" width="150" height="176" rx="6"></rect>
+    <text class="ltitle lbl-blue" x="132" y="220">ctf</text>
+    <text class="lsub2" x="132" y="236">ELF 64-bit LSB</text>
+    <text class="lsub2" x="132" y="250">executable</text>
+    <text class="lsub2" x="132" y="264">dynamically linked</text>
+    <text class="lsub2 warn" x="132" y="282">stripped</text>
+    <text class="lsub2" x="132" y="304">needs a library</text>
+    <text class="lsub2" x="132" y="318">that does not</text>
+    <text class="lsub2" x="132" y="332">exist on the system</text>
+
+    <rect class="box l4b" x="284" y="198" width="158" height="176" rx="6"></rect>
+    <text class="ltitle lbl-green" x="298" y="220">67b8601</text>
+    <text class="lsub2" x="298" y="236">PC bitmap, 512×512</text>
+    <text class="lsub2" x="298" y="250">24 bpp · valid header</text>
+    <rect class="box l5" x="294" y="262" width="138" height="104" rx="5"></rect>
+    <text class="ltitle lbl-red" x="306" y="282">lib5ae9b7f.so</text>
+    <text class="lsub2 hot" x="306" y="300">from byte 52</text>
+    <text class="lsub2" x="306" y="314">10,296 bytes</text>
+    <text class="lsub2" x="306" y="332">BMP declares its</text>
+    <text class="lsub2" x="306" y="346">pixels at 54: the</text>
+    <text class="lsub2" x="306" y="360">ELF starts 2 early</text>
+
+    <!-- right: the tool that peels each layer -->
+    <text class="col-head" x="700" y="30">THE TOOL THAT OPENS IT</text>
+
+    <g>
+      <rect class="tool" x="560" y="46" width="330" height="40" rx="5"></rect>
+      <text class="tcmd" x="574" y="63">$ base64 -d payload &gt; decoded_payload</text>
+      <text class="tnote" x="574" y="78">head shows the alphabet; base64 decodes it</text>
+    </g>
+    <g>
+      <rect class="tool" x="560" y="100" width="330" height="40" rx="5"></rect>
+      <text class="tcmd" x="574" y="117">$ file -z decoded_payload</text>
+      <text class="tnote" x="574" y="132">peeks through the gzip layer without extracting</text>
+    </g>
+    <g>
+      <rect class="tool" x="560" y="154" width="330" height="40" rx="5"></rect>
+      <text class="tcmd" x="574" y="171">$ tar xvzf decoded_payload</text>
+      <text class="tnote" x="574" y="186">unzips and unpacks in one step</text>
+    </g>
+    <g>
+      <rect class="tool" x="560" y="208" width="330" height="54" rx="5"></rect>
+      <text class="tcmd" x="574" y="225">$ grep 'ELF' *</text>
+      <text class="tnote" x="574" y="240">"binary file 67b8601 matches": an ELF header</text>
+      <text class="tnote" x="574" y="254">inside something claiming to be a bitmap</text>
+    </g>
+    <g>
+      <rect class="tool" x="560" y="276" width="330" height="68" rx="5"></rect>
+      <text class="tcmd" x="574" y="293">$ xxd 67b8601 | head</text>
+      <text class="tnote" x="574" y="308">finds 7f 45 4c 46 at offset 0x34 = 52</text>
+      <text class="tcmd" x="574" y="326">$ dd skip=52 count=64 bs=1 …</text>
+      <text class="tnote" x="574" y="340">grabs the 64-byte header first</text>
+    </g>
+    <g>
+      <rect class="tool hot-tool" x="560" y="358" width="330" height="80" rx="5"></rect>
+      <text class="tcmd lbl-red" x="574" y="375">$ readelf -h elf_header</text>
+      <text class="tnote" x="574" y="390">e_shoff 8568 · e_shnum 27 · e_shentsize 64</text>
+      <text class="tcalc lbl-red" x="574" y="410">size = 8568 + (27 × 64) = 10296</text>
+      <text class="tnote" x="574" y="428">…which is exactly the library's real size</text>
+    </g>
+
+    <!-- connectors -->
+    <line class="flow" x1="514" y1="60" x2="556" y2="63" marker-end="url(#po-arrow)"></line>
+    <line class="flow" x1="488" y1="112" x2="556" y2="117" marker-end="url(#po-arrow)"></line>
+    <line class="flow" x1="462" y1="166" x2="556" y2="171" marker-end="url(#po-arrow)"></line>
+    <line class="flow" x1="446" y1="228" x2="556" y2="232" marker-end="url(#po-arrow)"></line>
+    <line class="flow" x1="436" y1="300" x2="556" y2="300" marker-end="url(#po-arrow)"></line>
+    <line class="flow" x1="436" y1="340" x2="556" y2="390" marker-end="url(#po-arrow)"></line>
+  </svg>
+  <span slot="caption">
+    Nothing here is encrypted, just wrapped. Each layer announces itself to <code>file</code>
+    except the last: a shared library spliced into a bitmap, which an image viewer renders without
+    complaint. Only <code>grep</code> finding an ELF header where no ELF should be gives it away.
+  </span>
+</FigureFrame>
+
+<style>
+  text {
+    font-family: var(--font-mono);
+    font-variant-ligatures: none;
+    text-anchor: start;
+  }
+
+  .grid-dot {
+    fill: var(--border);
+    opacity: 0.5;
+  }
+
+  .box {
+    fill: var(--bg-1);
+    stroke-width: 1.25;
+    stroke-opacity: 0.8;
+  }
+
+  .l1 {
+    stroke: var(--red-soft);
+    fill: var(--bg-0);
+  }
+  .l2 {
+    stroke: var(--amber);
+  }
+  .l3 {
+    stroke: var(--teal);
+  }
+  .l4a {
+    stroke: var(--blue);
+    fill: var(--bg-2);
+  }
+  .l4b {
+    stroke: var(--green);
+    fill: var(--bg-2);
+  }
+  .l5 {
+    stroke: var(--red-soft);
+    fill: var(--bg-1);
+    stroke-dasharray: 4 3;
+  }
+
+  .ltitle {
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+
+  .lbl-red {
+    fill: var(--red-soft);
+  }
+  .lbl-amber {
+    fill: var(--amber);
+  }
+  .lbl-teal {
+    fill: var(--teal);
+  }
+  .lbl-blue {
+    fill: var(--blue);
+  }
+  .lbl-green {
+    fill: var(--green);
+  }
+
+  .lsub {
+    fill: var(--text-faint);
+    font-size: 10px;
+  }
+
+  .lsub2 {
+    fill: var(--text-muted);
+    font-size: 10px;
+  }
+
+  .lsub2.warn {
+    fill: var(--amber);
+  }
+
+  .lsub2.hot {
+    fill: var(--red-soft);
+  }
+
+  .col-head {
+    fill: var(--text-faint);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-anchor: middle;
+  }
+
+  .tool {
+    fill: var(--bg-2);
+    stroke: var(--border);
+    stroke-width: 1;
+  }
+
+  .hot-tool {
+    stroke: var(--red-soft);
+    stroke-opacity: 0.7;
+  }
+
+  .tcmd {
+    fill: var(--text);
+    font-size: 11px;
+  }
+
+  .tnote {
+    fill: var(--text-faint);
+    font-size: 9.5px;
+  }
+
+  .tcalc {
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+
+  .flow {
+    fill: none;
+    stroke: var(--text-faint);
+    stroke-width: 1.25;
+    stroke-opacity: 0.55;
+    stroke-dasharray: 4 3;
+  }
+
+  .arrow-head {
+    fill: var(--text-faint);
+    fill-opacity: 0.7;
+  }
+</style>

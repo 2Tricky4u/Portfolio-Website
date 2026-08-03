@@ -1,0 +1,265 @@
+---
+import FigureFrame from './FigureFrame.astro';
+
+interface Props {
+  label?: string;
+}
+
+const { label = 'the object model · and who owns the memory' } = Astro.props;
+---
+
+<FigureFrame label={label}>
+  <svg
+    viewBox="0 0 936 520"
+    role="img"
+    aria-label="The loader's object model. A Binary holds the filename, type, architecture, bit width and entry point, plus a vector of Section objects and a vector of Symbol objects. Each Section holds a name, type, virtual address, size and a bytes pointer, and points back at its owning Binary. Each Symbol holds a type, a name and an address. Only the bytes array inside each Section is heap allocated with malloc, so unload_binary frees exactly those and lets the vectors clean themselves up. That single malloc is also the only thing that can leak."
+  >
+    <defs>
+      <marker
+        id="om-arrow"
+        markerUnits="userSpaceOnUse"
+        markerWidth="9"
+        markerHeight="9"
+        refX="8.5"
+        refY="4.5"
+        orient="auto"
+      >
+        <path d="M0,0 L9,4.5 L0,9 Z" class="arrow-head"></path>
+      </marker>
+      <marker
+        id="om-arrow-red"
+        markerUnits="userSpaceOnUse"
+        markerWidth="9"
+        markerHeight="9"
+        refX="8.5"
+        refY="4.5"
+        orient="auto"
+      >
+        <path d="M0,0 L9,4.5 L0,9 Z" class="arrow-head-red"></path>
+      </marker>
+      <pattern id="om-grid" width="22" height="22" patternUnits="userSpaceOnUse">
+        <circle cx="1.5" cy="1.5" r="1" class="grid-dot"></circle>
+      </pattern>
+    </defs>
+
+    <rect x="0" y="0" width="936" height="520" fill="url(#om-grid)"></rect>
+
+    <!-- Binary -->
+    <rect class="box bin" x="46" y="60" width="270" height="212" rx="6"></rect>
+    <text class="cls lbl-teal" x="62" y="84">class Binary</text>
+    <text class="fld" x="62" y="108">std::string  filename</text>
+    <text class="fld" x="62" y="126">BinaryType   type</text>
+    <text class="fld" x="62" y="144">std::string  type_str</text>
+    <text class="fld" x="62" y="162">BinaryArch   arch</text>
+    <text class="fld" x="62" y="180">unsigned     bits</text>
+    <text class="fld" x="62" y="198">uint64_t     entry</text>
+    <rect class="vec" x="58" y="208" width="246" height="24" rx="4"></rect>
+    <text class="fld hot" x="66" y="224">vector&lt;Section&gt; sections</text>
+    <rect class="vec" x="58" y="238" width="246" height="24" rx="4"></rect>
+    <text class="fld hot" x="66" y="254">vector&lt;Symbol&gt;  symbols</text>
+
+    <!-- Section -->
+    <rect class="box sec" x="386" y="40" width="270" height="176" rx="6"></rect>
+    <text class="cls lbl-amber" x="402" y="64">class Section</text>
+    <text class="fld dim" x="402" y="88">Binary      *binary</text>
+    <text class="tiny" x="402" y="102">back-pointer to the owner</text>
+    <text class="fld" x="402" y="124">std::string  name</text>
+    <text class="fld" x="402" y="142">SectionType  type</text>
+    <text class="fld" x="402" y="160">uint64_t     vma, size</text>
+    <rect class="heap" x="398" y="170" width="246" height="24" rx="4"></rect>
+    <text class="fld lbl-red" x="406" y="186">uint8_t     *bytes</text>
+    <text class="tiny lbl-red" x="402" y="208">the only malloc() in the loader</text>
+
+    <!-- Symbol -->
+    <rect class="box sym" x="386" y="240" width="270" height="120" rx="6"></rect>
+    <text class="cls lbl-blue" x="402" y="264">class Symbol</text>
+    <text class="fld" x="402" y="288">SymbolType   type</text>
+    <text class="fld" x="402" y="306">std::string  name</text>
+    <text class="fld" x="402" y="324">uint64_t     addr</text>
+    <text class="tiny" x="402" y="346">all by-value, nothing to free</text>
+
+    <!-- ownership arrows -->
+    <path class="flow" d="M304,220 L344,220 L344,128 L382,128" marker-end="url(#om-arrow)"></path>
+    <text class="edge" x="350" y="166">1 : N</text>
+    <path class="flow" d="M304,250 L344,250 L344,300 L382,300" marker-end="url(#om-arrow)"></path>
+    <text class="edge" x="350" y="276">1 : N</text>
+    <path class="flow flow-back" d="M398,92 L330,92 L330,150 L320,150" marker-end="url(#om-arrow)"></path>
+
+    <!-- unload -->
+    <rect class="box free" x="700" y="130" width="200" height="140" rx="6"></rect>
+    <text class="cls lbl-red" x="716" y="154">unload_binary()</text>
+    <text class="side" x="716" y="178">for each Section:</text>
+    <text class="side hotc" x="726" y="196">free(sec-&gt;bytes)</text>
+    <text class="tiny" x="716" y="218">that is the entire body.</text>
+    <text class="tiny" x="716" y="234">The vectors and strings</text>
+    <text class="tiny" x="716" y="250">free themselves when the</text>
+    <text class="tiny" x="716" y="266">Binary goes out of scope.</text>
+
+    <path class="flow flow-free" d="M644,182 L696,182" marker-end="url(#om-arrow-red)"></path>
+
+    <!-- convenience note -->
+    <rect class="box hint" x="46" y="386" width="610" height="60" rx="6"></rect>
+    <text class="cls lbl-green" x="62" y="408">two conveniences worth keeping</text>
+    <text class="side" x="62" y="430">bin.get_text_section()</text>
+    <text class="tiny" x="240" y="430">→ finds .text</text>
+    <text class="side" x="360" y="430">sec.contains(addr)</text>
+    <text class="tiny" x="492" y="430">→ address in range?</text>
+
+    <text class="foot" x="468" y="478">
+      the whole design in one line: copy what you need out of libbfd, then close the handle
+    </text>
+    <text class="foot dimf" x="468" y="500">
+      no bfd type appears in loader.h, which is what makes the API format-agnostic
+    </text>
+  </svg>
+  <span slot="caption">
+    <code>Binary</code> owns vectors of <code>Section</code> and <code>Symbol</code> by value, so
+    the only heap allocation in the entire loader is each section's <code>bytes</code> array,
+    which is exactly what <code>unload_binary</code> frees.
+  </span>
+</FigureFrame>
+
+<style>
+  text {
+    font-family: var(--font-mono);
+    font-variant-ligatures: none;
+    text-anchor: start;
+  }
+
+  .grid-dot {
+    fill: var(--border);
+    opacity: 0.5;
+  }
+
+  .box {
+    fill: var(--bg-1);
+    stroke-width: 1.25;
+    stroke-opacity: 0.75;
+  }
+
+  .box.bin {
+    stroke: var(--teal);
+  }
+
+  .box.sec {
+    stroke: var(--amber);
+  }
+
+  .box.sym {
+    stroke: var(--blue);
+  }
+
+  .box.free {
+    stroke: var(--red-soft);
+  }
+
+  .box.hint {
+    stroke: var(--green);
+    stroke-opacity: 0.6;
+  }
+
+  .cls {
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+
+  .lbl-teal {
+    fill: var(--teal);
+  }
+
+  .lbl-amber {
+    fill: var(--amber);
+  }
+
+  .lbl-blue {
+    fill: var(--blue);
+  }
+
+  .lbl-red {
+    fill: var(--red-soft);
+  }
+
+  .lbl-green {
+    fill: var(--green);
+  }
+
+  .fld {
+    fill: var(--text);
+    font-size: 11px;
+  }
+
+  .fld.dim {
+    fill: var(--text-muted);
+  }
+
+  .fld.hot {
+    fill: var(--text);
+  }
+
+  .vec {
+    fill: var(--bg-2);
+    stroke: var(--border);
+    stroke-width: 1;
+  }
+
+  .heap {
+    fill: var(--bg-2);
+    stroke: var(--red-soft);
+    stroke-width: 1.25;
+    stroke-opacity: 0.9;
+  }
+
+  .tiny {
+    fill: var(--text-faint);
+    font-size: 9.5px;
+  }
+
+  .side {
+    fill: var(--text-muted);
+    font-size: 11px;
+  }
+
+  .side.hotc {
+    fill: var(--red-soft);
+  }
+
+  .edge {
+    fill: var(--text-faint);
+    font-size: 9.5px;
+  }
+
+  .flow {
+    fill: none;
+    stroke: var(--text-faint);
+    stroke-width: 1.5;
+  }
+
+  .flow-back {
+    stroke-dasharray: 4 3;
+    stroke-opacity: 0.6;
+  }
+
+  .flow-free {
+    stroke: var(--red-soft);
+    stroke-dasharray: 4 3;
+  }
+
+  .foot {
+    fill: var(--text-muted);
+    font-size: 10.5px;
+    text-anchor: middle;
+  }
+
+  .foot.dimf {
+    fill: var(--text-faint);
+    font-size: 10px;
+  }
+
+  .arrow-head {
+    fill: var(--text-faint);
+  }
+
+  .arrow-head-red {
+    fill: var(--red-soft);
+  }
+</style>

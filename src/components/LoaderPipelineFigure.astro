@@ -1,0 +1,266 @@
+---
+import FigureFrame from './FigureFrame.astro';
+
+interface Props {
+  label?: string;
+}
+
+const { label = 'load_binary() · the whole call graph' } = Astro.props;
+---
+
+<FigureFrame label={label}>
+  <svg
+    viewBox="0 0 936 560"
+    role="img"
+    aria-label="The call graph of the binary loader. load_binary defers immediately to load_binary_bfd. That function first calls open_bfd, which initialises libbfd once with bfd_init, opens the file with bfd_openr, verifies it is an object with bfd_check_format, clears a stale error state with bfd_set_error, and checks the flavour is known. Back in load_binary_bfd it reads the entry point, target name and flavour to decide ELF or PE, then reads the architecture to decide 32 or 64 bit. It then calls load_symbols_bfd and load_dynsym_bfd, whose failures are ignored because symbols are optional, and load_sections_bfd, whose failure is fatal. Finally bfd_close releases the handle, so no libbfd state outlives the call."
+  >
+    <defs>
+      <marker
+        id="lp-arrow"
+        markerUnits="userSpaceOnUse"
+        markerWidth="9"
+        markerHeight="9"
+        refX="8.5"
+        refY="4.5"
+        orient="auto"
+      >
+        <path d="M0,0 L9,4.5 L0,9 Z" class="arrow-head"></path>
+      </marker>
+      <marker
+        id="lp-arrow-red"
+        markerUnits="userSpaceOnUse"
+        markerWidth="9"
+        markerHeight="9"
+        refX="8.5"
+        refY="4.5"
+        orient="auto"
+      >
+        <path d="M0,0 L9,4.5 L0,9 Z" class="arrow-head-red"></path>
+      </marker>
+      <pattern id="lp-grid" width="22" height="22" patternUnits="userSpaceOnUse">
+        <circle cx="1.5" cy="1.5" r="1" class="grid-dot"></circle>
+      </pattern>
+    </defs>
+
+    <rect x="0" y="0" width="936" height="560" fill="url(#lp-grid)"></rect>
+
+    <text class="col-head" x="230" y="26">YOUR CODE</text>
+    <text class="col-head" x="700" y="26">WHAT LIBBFD DOES</text>
+
+    <!-- load_binary -->
+    <rect class="box api" x="70" y="40" width="330" height="44" rx="6"></rect>
+    <text class="fn lbl-teal" x="86" y="60">load_binary()</text>
+    <text class="tiny" x="86" y="76">the only entry point the API exposes</text>
+
+    <!-- load_binary_bfd -->
+    <rect class="box core" x="70" y="100" width="330" height="44" rx="6"></rect>
+    <text class="fn lbl-green" x="86" y="120">load_binary_bfd()</text>
+    <text class="tiny" x="86" y="136">does the real work</text>
+
+    <!-- open_bfd -->
+    <rect class="box core" x="70" y="164" width="330" height="112" rx="6"></rect>
+    <text class="fn lbl-green" x="86" y="184">open_bfd()</text>
+    <text class="step" x="86" y="204">1  bfd_init()</text>
+    <text class="tiny2" x="210" y="204">once per process</text>
+    <text class="step" x="86" y="222">2  bfd_openr(fname, NULL)</text>
+    <text class="tiny2" x="266" y="222">NULL = autodetect</text>
+    <text class="step" x="86" y="240">3  bfd_check_format(bfd_object)</text>
+    <text class="step" x="86" y="258">4  bfd_set_error(no_error)</text>
+    <text class="tiny2" x="256" y="258">← the workaround</text>
+
+    <!-- properties -->
+    <rect class="box core" x="70" y="296" width="330" height="94" rx="6"></rect>
+    <text class="fn lbl-green" x="86" y="316">parse basic properties</text>
+    <text class="step" x="86" y="336">bfd_get_start_address()</text>
+    <text class="tiny2" x="262" y="336">→ entry</text>
+    <text class="step" x="86" y="354">bfd_h-&gt;xvec-&gt;flavour</text>
+    <text class="tiny2" x="238" y="354">→ ELF or PE</text>
+    <text class="step" x="86" y="372">bfd_get_arch_info()-&gt;mach</text>
+    <text class="tiny2" x="278" y="372">→ 32/64</text>
+
+    <!-- symbols -->
+    <rect class="box warn" x="70" y="410" width="330" height="62" rx="6"></rect>
+    <text class="fn lbl-amber" x="86" y="430">load_symbols_bfd() + load_dynsym_bfd()</text>
+    <text class="step" x="86" y="450">bfd_canonicalize_symtab()</text>
+    <text class="tiny2" x="272" y="450">best-effort</text>
+    <text class="tiny" x="86" y="466">return value ignored, symbols may not exist</text>
+
+    <!-- sections -->
+    <rect class="box hot" x="70" y="486" width="330" height="46" rx="6"></rect>
+    <text class="fn lbl-red" x="86" y="506">load_sections_bfd()</text>
+    <text class="tiny" x="86" y="522">failure here IS fatal, goto fail</text>
+
+    <!-- right column explanations -->
+    <rect class="box side" x="470" y="164" width="400" height="112" rx="6"></rect>
+    <text class="side-t lbl-amber" x="486" y="184">returns bfd *bfd_h</text>
+    <text class="side-l" x="486" y="204">libbfd's root handle. Everything else in the</text>
+    <text class="side-l" x="486" y="220">API takes this as its first argument.</text>
+    <text class="side-l" x="486" y="240">bfd_check_format() can leave a stale</text>
+    <text class="side-l" x="486" y="256">wrong_format error behind even on success,</text>
+    <text class="side-l" x="486" y="270">hence step 4.</text>
+
+    <rect class="box side" x="470" y="296" width="400" height="94" rx="6"></rect>
+    <text class="side-t lbl-amber" x="486" y="316">bfd_h-&gt;xvec = the bfd_target</text>
+    <text class="side-l" x="486" y="336">xvec-&gt;name gives "elf64-x86-64" or</text>
+    <text class="side-l" x="486" y="352">"pei-x86-64"; flavour gives the family.</text>
+    <text class="side-l" x="486" y="372">mach distinguishes i386 from x86_64.</text>
+
+    <rect class="box side" x="470" y="410" width="400" height="122" rx="6"></rect>
+    <text class="side-t lbl-amber" x="486" y="430">two-step reads</text>
+    <text class="side-l" x="486" y="450">libbfd never hands you a sized array. You ask</text>
+    <text class="side-l" x="486" y="466">for the upper bound, malloc that many bytes,</text>
+    <text class="side-l" x="486" y="482">then ask libbfd to fill it in:</text>
+    <text class="side-c" x="486" y="502">n = bfd_get_symtab_upper_bound(h);</text>
+    <text class="side-c" x="486" y="518">nsyms = bfd_canonicalize_symtab(h, tab);</text>
+
+    <!-- flow arrows -->
+    <line class="flow" x1="235" y1="84" x2="235" y2="97" marker-end="url(#lp-arrow)"></line>
+    <line class="flow" x1="235" y1="144" x2="235" y2="161" marker-end="url(#lp-arrow)"></line>
+    <line class="flow" x1="235" y1="276" x2="235" y2="293" marker-end="url(#lp-arrow)"></line>
+    <line class="flow" x1="235" y1="390" x2="235" y2="407" marker-end="url(#lp-arrow)"></line>
+    <line class="flow" x1="235" y1="472" x2="235" y2="483" marker-end="url(#lp-arrow)"></line>
+
+    <line class="flow flow-dim" x1="404" y1="220" x2="466" y2="220" marker-end="url(#lp-arrow)"></line>
+    <line class="flow flow-dim" x1="404" y1="343" x2="466" y2="343" marker-end="url(#lp-arrow)"></line>
+    <line class="flow flow-dim" x1="404" y1="441" x2="466" y2="441" marker-end="url(#lp-arrow)"></line>
+
+    <!-- bfd_close -->
+    <path class="flow flow-close" d="M70,509 L40,509 L40,122 L66,122" marker-end="url(#lp-arrow-red)"></path>
+    <text class="close-t lbl-red" x="30" y="300" transform="rotate(-90 30 300)">bfd_close(): no libbfd state escapes</text>
+  </svg>
+  <span slot="caption">
+    Every libbfd call the loader makes, in order. Note the asymmetry at the bottom: missing
+    symbols are tolerated, missing sections are fatal. And once <code>bfd_close</code> runs, the
+    <code>Binary</code> object owns everything, no libbfd pointer outlives the call.
+  </span>
+</FigureFrame>
+
+<style>
+  text {
+    font-family: var(--font-mono);
+    font-variant-ligatures: none;
+    text-anchor: start;
+  }
+
+  .grid-dot {
+    fill: var(--border);
+    opacity: 0.5;
+  }
+
+  .col-head {
+    fill: var(--text-faint);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-anchor: middle;
+  }
+
+  .box {
+    fill: var(--bg-1);
+    stroke-width: 1.25;
+    stroke-opacity: 0.75;
+  }
+
+  .box.api {
+    stroke: var(--teal);
+  }
+
+  .box.core {
+    stroke: var(--green);
+  }
+
+  .box.warn {
+    stroke: var(--amber);
+  }
+
+  .box.hot {
+    stroke: var(--red-soft);
+  }
+
+  .box.side {
+    stroke: var(--border);
+    stroke-opacity: 1;
+    fill: var(--bg-2);
+  }
+
+  .fn {
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+
+  .lbl-teal {
+    fill: var(--teal);
+  }
+
+  .lbl-green {
+    fill: var(--green);
+  }
+
+  .lbl-amber {
+    fill: var(--amber);
+  }
+
+  .lbl-red {
+    fill: var(--red-soft);
+  }
+
+  .step {
+    fill: var(--text);
+    font-size: 11px;
+  }
+
+  .tiny {
+    fill: var(--text-faint);
+    font-size: 9.5px;
+  }
+
+  .tiny2 {
+    fill: var(--text-faint);
+    font-size: 9px;
+  }
+
+  .side-t {
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+
+  .side-l {
+    fill: var(--text-muted);
+    font-size: 10.5px;
+  }
+
+  .side-c {
+    fill: var(--text-faint);
+    font-size: 10px;
+  }
+
+  .flow {
+    fill: none;
+    stroke: var(--text-faint);
+    stroke-width: 1.5;
+  }
+
+  .flow-dim {
+    stroke-opacity: 0.45;
+    stroke-dasharray: 4 3;
+  }
+
+  .flow-close {
+    stroke: var(--red-soft);
+    stroke-opacity: 0.8;
+    stroke-dasharray: 5 3;
+  }
+
+  .close-t {
+    font-size: 10px;
+    text-anchor: middle;
+  }
+
+  .arrow-head {
+    fill: var(--text-faint);
+  }
+
+  .arrow-head-red {
+    fill: var(--red-soft);
+    fill-opacity: 0.85;
+  }
+</style>
