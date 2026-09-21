@@ -81,7 +81,8 @@ const OPEN_TARGETS: Record<string, string> = {
   github: 'https://github.com/2Tricky4u',
   linkedin: 'https://linkedin.com/in/xavier-ogay',
   cv: 'https://drive.google.com/file/d/1QvlzlDPrODCkBERG-GFwfc5eGkK12XTU/preview',
-  email: 'mailto:xaga.ogay@gmail.com',
+  // Assembled at runtime so the literal address never appears in the bundle.
+  email: 'mailto:' + ['xaga', 'ogay'].join('.') + '@' + ['gmail', 'com'].join('.'),
   projects: '/#projects',
   writeups: '/writeups',
   home: '/',

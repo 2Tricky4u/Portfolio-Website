@@ -1,5 +1,5 @@
 /* Contact form → Google Apps Script (same endpoint and field names as the
-   legacy site; the Sheet's columns depend on them) + email de-obfuscation. */
+   legacy site; the Sheet's columns depend on them). */
 
 const SCRIPT_URL =
   'https://script.google.com/macros/s/AKfycbwtaKGUTL0FXl7m_hIMPhFAj_RnJ0k5Yb2qR84FIUBE4sIkvsGvYAyLXkO2MvZNtiTe/exec';
@@ -26,14 +26,3 @@ form?.addEventListener('submit', async (e) => {
     msg.className = 'mono';
   }, 10000);
 });
-
-const emailLink = document.getElementById('email-link');
-if (emailLink) {
-  const user = emailLink.dataset.user;
-  const domain = emailLink.dataset.domain;
-  if (user && domain) {
-    const addr = `${user}@${domain}`;
-    emailLink.textContent = addr;
-    emailLink.setAttribute('href', `mailto:${addr}`);
-  }
-}

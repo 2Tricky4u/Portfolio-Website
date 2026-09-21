@@ -13,8 +13,8 @@ import SectionHeading from './SectionHeading.astro';
           and always happy to talk systems programming, binary analysis, or a project idea.
         </p>
         <p class="email mono">
-          <a class="link" id="email-link" data-user="xaga.ogay" data-domain="gmail.com" href="#contact"
-            >[email protected]</a
+          <span class="addr"
+            >xaga<em class="sym">dot</em>ogay<em class="sym">at</em>gmail<em class="sym">dot</em>com</span
           >
         </p>
         <ul class="social mono">
@@ -82,6 +82,20 @@ import SectionHeading from './SectionHeading.astro';
 
   .email {
     margin-bottom: var(--space-4);
+  }
+
+  /* Written out on purpose (no mailto, no @) so scrapers don't harvest it. */
+  .addr {
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+  }
+
+  .sym {
+    font-style: italic;
+    color: var(--red-soft);
+    opacity: 0.85;
+    margin-inline: 0.35em;
+    user-select: none;
   }
 
   .social {
